@@ -29,6 +29,7 @@ ofxAVFVideoPlayer::~ofxAVFVideoPlayer() {
 
 bool ofxAVFVideoPlayer::loadMovie(string path) {
     bInitialized = false;
+	
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     moviePlayer = [[AVFVideoRenderer alloc] init];
     bool isURL = false;
@@ -68,9 +69,11 @@ void ofxAVFVideoPlayer::idleMovie() {
 }
 
 void ofxAVFVideoPlayer::update() {
+
     if(!moviePlayer) return;
     if([moviePlayer isReady]) {
         if(!bInitialized) {
+
             // Create the FBO
             fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
             bInitialized = true;
@@ -171,7 +174,7 @@ void ofxAVFVideoPlayer::setPosition(float pct) {
 }
 
 void ofxAVFVideoPlayer::setVolume(float volume) {
-    
+    moviePlayer.player.volume = volume;
 }
 
 void ofxAVFVideoPlayer::setBalance(float balance) {
