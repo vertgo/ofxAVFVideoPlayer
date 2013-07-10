@@ -21,7 +21,7 @@ class testApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         std::vector<ofxAVFVideoPlayer *> videoPlayers;
-        static const int N_VIDEO_PLAYERS = 6;
+        static const int N_VIDEO_PLAYERS = 1;
     
     
 };

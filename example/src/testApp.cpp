@@ -4,7 +4,7 @@
 void testApp::setup(){
     for(int i=0; i<N_VIDEO_PLAYERS; i++) {
         videoPlayers.push_back(new ofxAVFVideoPlayer());
-        videoPlayers[i]->loadMovie("EmeliSande_NextToMe.mov");
+        videoPlayers[i]->loadMovie("/Users/focus/Desktop/RGBD_Compiled/Casey_tangle.mov");
     }
     
     
@@ -30,7 +30,8 @@ void testApp::update(){
 void testApp::draw(){
     int i=0;
     for(auto p : videoPlayers) {
-        p->draw(ofMap(i++, 0, videoPlayers.size(), 0, ofGetWidth()), ofGetHeight()/2 - 108*2, 192*4, 108*4);
+        //p->draw(ofMap(i++, 0, videoPlayers.size(), 0, ofGetWidth()), ofGetHeight()/2 - 108*2, 192*4, 108*4);
+		p->draw(0,0);
     }
 
 }
