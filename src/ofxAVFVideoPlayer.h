@@ -91,6 +91,7 @@ protected:
     ofLoopType currentLoopState;
     
     bool bPaused;
+	bool bShouldPlay;
     bool bNewFrame;
     bool bHavePixelsChanged;
     

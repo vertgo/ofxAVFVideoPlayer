@@ -45,7 +45,8 @@ bool ofxAVFVideoPlayer::loadMovie(string path) {
     
     [moviePlayer loadFile:[NSString stringWithUTF8String:path.c_str()]];
     
-    
+    bShouldPlay = false;
+	
     [pool release];
     
     return true;
@@ -77,6 +78,10 @@ void ofxAVFVideoPlayer::update() {
             // Create the FBO
             fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
             bInitialized = true;
+			if(bShouldPlay){
+				play();
+				bShouldPlay = false;
+			}
         }
         
         // Render movie into FBO so we can get a texture
@@ -93,7 +98,12 @@ void ofxAVFVideoPlayer::update() {
 }
 
 void ofxAVFVideoPlayer::play() {
-    [moviePlayer play];
+	if(bInitialized){
+		[moviePlayer play];
+	}
+	else{
+		bShouldPlay = true;
+	}
 }
 
 void ofxAVFVideoPlayer::stop() {
