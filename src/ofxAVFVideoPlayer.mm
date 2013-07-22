@@ -80,7 +80,8 @@ void ofxAVFVideoPlayer::update() {
             fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
             bInitialized = true;
 			if(scrubToTime != 0.0f){
-				setPosition(scrubToTime);
+				cout << "Scrubbing to time on load " << scrubToTime << endl;
+				setPositionInSeconds(scrubToTime);
 				scrubToTime = false;
 			}
 			if(bShouldPlay){
@@ -105,6 +106,7 @@ void ofxAVFVideoPlayer::update() {
 
 void ofxAVFVideoPlayer::play() {
 	if(bInitialized){
+		cout << "initialized and playing at time " << getPositionInSeconds() << endl;
 		[moviePlayer play];
 	}
 	else{
@@ -185,13 +187,18 @@ void ofxAVFVideoPlayer::setPaused(bool bPaused) {
     
 }
 
-void ofxAVFVideoPlayer::setPosition(float pct) {
+void ofxAVFVideoPlayer::setPositionInSeconds(float position) {
 	if(![moviePlayer isReady]){
-		scrubToTime = pct;
+		cout << "video player not ready, declaring to scrub to time " << scrubToTime << endl;
+		scrubToTime = position;
 	}
 	else{
-		[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(getDuration() * pct, [moviePlayer getVideoDuration].timescale)];
+		[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(position, [moviePlayer getVideoDuration].timescale)];
 	}
+}
+
+void ofxAVFVideoPlayer::setPosition(float pct) {
+	[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(getDuration() * pct, [moviePlayer getVideoDuration].timescale)];
 }
 
 void ofxAVFVideoPlayer::setVolume(float volume) {

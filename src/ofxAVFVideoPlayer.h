@@ -59,6 +59,7 @@ public:
     
     void                setPaused(bool bPaused);
     void                setPosition(float pct);
+	void                setPositionInSeconds(float seconds);
     void                setVolume(float volume);
     void                setBalance(float balance);
     void                setLoopState(ofLoopType state);
