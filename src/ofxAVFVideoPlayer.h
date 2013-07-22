@@ -92,6 +92,8 @@ protected:
     
     bool bPaused;
 	bool bShouldPlay;
+	
+	float scrubToTime;
     bool bNewFrame;
     bool bHavePixelsChanged;
     

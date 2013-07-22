@@ -15,7 +15,8 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer() {
     bPaused = true;
 	duration = 0.0f;
     speed = 1.0f;
-    
+	
+    scrubToTime = 0.0;
     bInitialized = false;
     
     pixelFormat = OF_PIXELS_RGB;
@@ -78,10 +79,15 @@ void ofxAVFVideoPlayer::update() {
             // Create the FBO
             fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
             bInitialized = true;
+			if(scrubToTime != 0.0f){
+				setPosition(scrubToTime);
+				scrubToTime = false;
+			}
 			if(bShouldPlay){
 				play();
 				bShouldPlay = false;
 			}
+
         }
         
         // Render movie into FBO so we can get a texture
@@ -180,7 +186,12 @@ void ofxAVFVideoPlayer::setPaused(bool bPaused) {
 }
 
 void ofxAVFVideoPlayer::setPosition(float pct) {
-    [[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(getDuration() * pct, [moviePlayer getVideoDuration].timescale)];
+	if(![moviePlayer isReady]){
+		scrubToTime = pct;
+	}
+	else{
+		[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(getDuration() * pct, [moviePlayer getVideoDuration].timescale)];
+	}
 }
 
 void ofxAVFVideoPlayer::setVolume(float volume) {
