@@ -80,7 +80,6 @@ void ofxAVFVideoPlayer::update() {
             fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
             bInitialized = true;
 			if(scrubToTime != 0.0f){
-				cout << "Scrubbing to time on load " << scrubToTime << endl;
 				setPositionInSeconds(scrubToTime);
 				scrubToTime = false;
 			}

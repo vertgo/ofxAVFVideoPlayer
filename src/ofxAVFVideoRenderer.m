@@ -131,7 +131,7 @@
 - (void) playerItemDidReachEnd:(NSNotification *) notification {
     [self.player seekToTime:kCMTimeZero];
     // if(loop)
-    [self.player play];
+    //[self.player play];
 }
 
 - (void) render {
