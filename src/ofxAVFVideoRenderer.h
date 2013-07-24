@@ -19,6 +19,11 @@
     AVPlayer *player;
     AVPlayerItem *playerItem;
     AVPlayerLayer *playerLayer;
+    AVAssetReader *assetReader;
+    
+    NSMutableArray * leftVolume;
+    NSMutableArray * rightVolume;
+    float maxVolume;
     
     CARenderer *layerRenderer;
     
@@ -28,11 +33,18 @@
     BOOL loading;
     BOOL ready;
     BOOL deallocWhenReady;
+    
+    id periodicTimeObserver;
 }
     @property (nonatomic, retain) AVPlayer *player;
     @property (nonatomic, retain) AVPlayerItem *playerItem;
     @property (nonatomic, retain) AVPlayerLayer *playerLayer;
+    @property (nonatomic, retain) AVAssetReader *assetReader;
     @property (nonatomic, retain) CARenderer *layerRenderer;
+
+    @property (nonatomic, retain) NSMutableArray * leftVolume;
+    @property (nonatomic, retain) NSMutableArray * rightVolume;
+    @property (nonatomic, assign) float maxVolume;
 
 - (void) loadFile:(NSString *)filename;
 - (void) play;

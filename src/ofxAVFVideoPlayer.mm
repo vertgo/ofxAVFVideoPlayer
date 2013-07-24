@@ -121,6 +121,16 @@ bool ofxAVFVideoPlayer::isFrameNew() {
     return true;
 }
 
+float ofxAVFVideoPlayer::getLeftAmplitude() {
+    if(!moviePlayer || ![moviePlayer isReady] || [moviePlayer.leftVolume count] == 0 || !bInitialized) {
+        return 0;
+    }
+    
+    int idx = MIN(floor(getPosition() * [moviePlayer.leftVolume count]), [moviePlayer.leftVolume count] - 1);
+    cout << "Getting amplitude for pos " << getPosition() << " idx = " << idx << " / " << [moviePlayer.leftVolume count] << endl;
+    return ([[moviePlayer.leftVolume objectAtIndex:idx] floatValue] / [moviePlayer maxVolume]);
+}
+
 unsigned char* ofxAVFVideoPlayer::getPixels() {
     if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
         

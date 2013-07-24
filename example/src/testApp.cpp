@@ -30,8 +30,12 @@ void testApp::update(){
 void testApp::draw(){
     int i=0;
     for(auto p : videoPlayers) {
+        ofSetColor(ofColor::white);
         //p->draw(ofMap(i++, 0, videoPlayers.size(), 0, ofGetWidth()), ofGetHeight()/2 - 108*2, 192*4, 108*4);
 		p->draw(0,0);
+        
+        ofSetColor(ofColor::red);
+        ofRect(0, ofGetHeight() - 20, p->getLeftAmplitude() * ofGetWidth(), 20);
     }
 
 }

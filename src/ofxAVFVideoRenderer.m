@@ -9,8 +9,21 @@
 #import "ofxAVFVideoRenderer.h"
 
 @implementation AVFVideoRenderer
-@synthesize player, playerItem, playerLayer, layerRenderer;
+@synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
+@synthesize leftVolume, rightVolume, maxVolume;
 
+int count = 0;
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        NSLog(@"Do it");
+        leftVolume = [[NSMutableArray array] retain];
+        rightVolume = [[NSMutableArray array] retain];
+    }
+    return self;
+}
 
 - (void) loadFile:(NSString *)filename {
     loading = YES;
@@ -19,8 +32,12 @@
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
     
+    [leftVolume removeAllObjects];
+    [rightVolume removeAllObjects];
+    maxVolume = 0;
+    
     NSLog(@"Trying to load %@", filename);
-
+    
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
     NSString *tracksKey = @"tracks";
     
@@ -41,7 +58,7 @@
                 AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
                 videoSize = [videoTrack naturalSize];
                 videoDuration = asset.duration;
-
+                
                 self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
                 [self.playerItem addObserver:self forKeyPath:@"status" options:0 context:&ItemStatusContext];
                 
@@ -62,7 +79,105 @@
                 // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
                 self.layerRenderer.bounds = CGRectMake(-videoSize.width/2, -videoSize.height/2, videoSize.width, videoSize.height);
                 self.playerLayer.bounds = self.layerRenderer.bounds;
-            
+                                
+                AVAssetTrack *audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
+                NSError *error = nil;
+                assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
+                if (error!=nil) {
+                    NSLog(@"Unable to create asset reader %@", [error localizedDescription]);
+                } else {
+                    NSMutableDictionary *bufferOptions = [NSMutableDictionary dictionary];
+                    [bufferOptions setObject:[NSNumber numberWithInt:kAudioFormatLinearPCM] forKey:AVFormatIDKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithInt:44100] forKey:AVSampleRateKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithInt:2] forKey:AVNumberOfChannelsKey];
+                    //  [bufferOptions setObject:[NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)] forKey:AVChannelLayoutKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithInt:16] forKey:AVLinearPCMBitDepthKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsBigEndianKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsFloatKey];
+//                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsNonInterleaved];
+                    [assetReader addOutput:[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
+                                                                                      outputSettings:bufferOptions]];
+                    [assetReader startReading];
+                }
+                if (audioTrack != nil) {
+                    periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001) queue:dispatch_queue_create("eventQueue", NULL) usingBlock:^(CMTime time) {
+                        dispatch_sync(dispatch_get_main_queue(), ^{
+                            if ([assetReader status] == AVAssetReaderStatusCompleted) {
+                                // Got all the data we need, kill this block.
+                                [player removeTimeObserver:periodicTimeObserver];
+                                return;
+                            }
+                            
+                            if ([assetReader status] == AVAssetReaderStatusReading) {
+                                AVAssetReaderTrackOutput *output = [[assetReader outputs] objectAtIndex:0];
+                                CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
+                                
+                                
+                                 while( sampleBuffer != NULL ) {
+                                     sampleBuffer = [output copyNextSampleBuffer];
+                                     
+                                     if( sampleBuffer == NULL )
+                                         continue;
+                                     
+                                     CMBlockBufferRef buffer = CMSampleBufferGetDataBuffer( sampleBuffer );
+                                     
+                                     size_t lengthAtOffset;
+                                     size_t totalLength;
+                                     char* data;
+                                     
+                                     if( CMBlockBufferGetDataPointer( buffer, 0, &lengthAtOffset, &totalLength, &data ) != noErr )
+                                     {
+                                         NSLog( @"error!" );
+                                         break;
+                                     }
+                                     
+                                     CMItemCount numSamplesInBuffer = CMSampleBufferGetNumSamples(sampleBuffer);
+                                     
+                                     AudioBufferList audioBufferList;
+                                     
+                                     CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+                                                                                             sampleBuffer,
+                                                                                             NULL,
+                                                                                             &audioBufferList,
+                                                                                             sizeof(audioBufferList),
+                                                                                             NULL,
+                                                                                             NULL,
+                                                                                             kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+                                                                                             &buffer
+                                                                                             );
+                                     
+                                     for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
+                                         SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
+                                         float rms = 0.0f;
+                                         for (int i=0; i < numSamplesInBuffer; i++) {
+                                             // amplitude for the sample is samples[i], assuming you have linear pcm to start with
+                                             //                                           NSLog(@"%d\t", samples[i]);
+                                             rms += samples[i] * samples[i];
+                                         }
+                                         rms = sqrtf(rms / numSamplesInBuffer);
+                                         
+                                         if (0 == bufferCount) {
+                                             [leftVolume addObject:[NSNumber numberWithFloat:rms]];
+                                         }
+                                         
+                                         if (1 == bufferCount || (0 == bufferCount && 1 == audioBufferList.mNumberBuffers)) {
+                                             [rightVolume addObject:[NSNumber numberWithFloat:rms]];
+                                         }
+                                         NSLog(@"Adding value %f", rms);
+                                         maxVolume = MAX(maxVolume, rms);
+                                         
+                                     }
+                                     
+                                     CFRelease( buffer );
+                                     CFRelease( sampleBuffer );
+                                     
+//                                     NSLog(@"%d Left / Right Volume: %f / %f", ++count, [[leftVolume lastObject] floatValue], [[rightVolume lastObject] floatValue]);
+                                 }
+                            }
+                        });
+                    }];
+                }
+                 
                 ready = YES;
                 loading = NO;
             }
@@ -85,7 +200,7 @@
     }
     else {
         [self stop];
-
+        
         // SK: Releasing the CARenderer is slow for some reason
         //     It will freeze the main thread for a few dozen mS.
         //     If you're swapping in and out videos a lot, the loadFile:
@@ -94,13 +209,17 @@
         //     them every time a new file is needed.
         
         if(self.layerRenderer) [self.layerRenderer release];
-    
+        
         [[NSNotificationCenter defaultCenter] removeObserver:self];
         if(self.playerItem) [self.playerItem removeObserver:self forKeyPath:@"status"];
         
         if(self.player) [self.player release];
         if(self.playerItem) [self.playerItem release];
         if(self.playerLayer) [self.playerLayer release];
+        
+        if (self.leftVolume) [self.leftVolume release];
+        if (self.rightVolume) [self.rightVolume release];
+        
         if(!deallocWhenReady) [super dealloc];
     }
 }
@@ -142,26 +261,26 @@
     
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
+    
     glViewport(0, 0, videoSize.width, videoSize.height);
-
+    
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-
+    
     glOrtho(0.0f, videoSize.width, videoSize.height, 0.0f, 0.0f, 1.0f);
-
+    
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-
+    
     glTranslatef(videoSize.width/2,videoSize.height/2,0);
     
     [layerRenderer beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
     [layerRenderer addUpdateRect:layerRenderer.layer.bounds];
     [layerRenderer render];
     [layerRenderer endFrame];
-
+    
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
