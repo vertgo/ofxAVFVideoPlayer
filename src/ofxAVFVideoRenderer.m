@@ -10,7 +10,7 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
-@synthesize leftVolume, rightVolume, maxVolume;
+@synthesize leftVolume, rightVolume, minVolume, maxVolume;
 
 int count = 0;
 
@@ -18,7 +18,6 @@ int count = 0;
 {
     self = [super init];
     if (self) {
-        NSLog(@"Do it");
         leftVolume = [[NSMutableArray array] retain];
         rightVolume = [[NSMutableArray array] retain];
     }
@@ -34,7 +33,8 @@ int count = 0;
     
     [leftVolume removeAllObjects];
     [rightVolume removeAllObjects];
-    maxVolume = 0;
+    minVolume = CGFLOAT_MAX;
+    maxVolume = CGFLOAT_MIN;
     
     NSLog(@"Trying to load %@", filename);
     
@@ -101,10 +101,11 @@ int count = 0;
                 }
                 if (audioTrack != nil) {
                     periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001) queue:dispatch_queue_create("eventQueue", NULL) usingBlock:^(CMTime time) {
-                        dispatch_sync(dispatch_get_main_queue(), ^{
+//                        dispatch_sync(dispatch_get_main_queue(), ^{
                             if ([assetReader status] == AVAssetReaderStatusCompleted) {
                                 // Got all the data we need, kill this block.
                                 [player removeTimeObserver:periodicTimeObserver];
+//                                [self postProcessAmplitude:100];
                                 return;
                             }
                             
@@ -142,39 +143,27 @@ int count = 0;
                                                                                              sizeof(audioBufferList),
                                                                                              NULL,
                                                                                              NULL,
-                                                                                             kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+                                                                                             kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,  // pass in something else
                                                                                              &buffer
                                                                                              );
-                                     
+                                                                          
                                      for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
                                          SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
-                                         float rms = 0.0f;
-                                         for (int i=0; i < numSamplesInBuffer; i++) {
-                                             // amplitude for the sample is samples[i], assuming you have linear pcm to start with
-                                             //                                           NSLog(@"%d\t", samples[i]);
-                                             rms += samples[i] * samples[i];
-                                         }
-                                         rms = sqrtf(rms / numSamplesInBuffer);
                                          
-                                         if (0 == bufferCount) {
-                                             [leftVolume addObject:[NSNumber numberWithFloat:rms]];
+//                                         NSLog(@"LOOK AT ALL THE SAMPLES %ld", numSamplesInBuffer);
+
+                                         for (int i = 0; i < numSamplesInBuffer; i++) {
+                                             [leftVolume addObject:[NSNumber numberWithFloat:samples[i]]];
+                                             minVolume = MIN(minVolume, samples[i]);
+                                             maxVolume = MAX(maxVolume, samples[i]);
                                          }
-                                         
-                                         if (1 == bufferCount || (0 == bufferCount && 1 == audioBufferList.mNumberBuffers)) {
-                                             [rightVolume addObject:[NSNumber numberWithFloat:rms]];
-                                         }
-                                         NSLog(@"Adding value %f", rms);
-                                         maxVolume = MAX(maxVolume, rms);
-                                         
                                      }
                                      
                                      CFRelease( buffer );
                                      CFRelease( sampleBuffer );
-                                     
-//                                     NSLog(@"%d Left / Right Volume: %f / %f", ++count, [[leftVolume lastObject] floatValue], [[rightVolume lastObject] floatValue]);
                                  }
                             }
-                        });
+//                        });
                     }];
                 }
                  
@@ -289,6 +278,31 @@ int count = 0;
     glPopAttrib();
     
     glFinish(); //Rendering needs to be done before passing texture to video frame
+}
+
+- (void) postProcessAmplitude:(float)damping
+{
+    for (int i = 0; i < [leftVolume count]; i++) {
+        float avg = 0;
+        if (i < damping / 2) {
+            for (int j = 0; j < damping; j++) {
+                avg += [[leftVolume objectAtIndex:j] floatValue];
+            }
+        }
+        else if (i > [leftVolume count] - damping / 2 - 1) {
+            for (int j = [leftVolume count] - 1 - damping; j < [leftVolume count] - 1; j++) {
+                avg += [[leftVolume objectAtIndex:j] floatValue];
+            }
+        }
+        else {
+            for (int j = i - damping / 2; j <  i + damping / 2; j++) {
+                avg += [[leftVolume objectAtIndex:j] floatValue];
+            }
+        }
+        
+        avg /= damping;
+        [leftVolume setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
+    }
 }
 
 @end
