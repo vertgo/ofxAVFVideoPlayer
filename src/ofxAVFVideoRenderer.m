@@ -27,6 +27,7 @@ int count = 0;
 - (void) loadFile:(NSString *)filename {
     loading = YES;
     ready = NO;
+    audioReady = NO;
     deallocWhenReady = NO;
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
@@ -100,73 +101,75 @@ int count = 0;
                     [assetReader startReading];
                 }
                 if (audioTrack != nil) {
-                    periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001) queue:dispatch_queue_create("eventQueue", NULL) usingBlock:^(CMTime time) {
-//                        dispatch_sync(dispatch_get_main_queue(), ^{
-                            if ([assetReader status] == AVAssetReaderStatusCompleted) {
-                                // Got all the data we need, kill this block.
-                                [player removeTimeObserver:periodicTimeObserver];
-//                                [self postProcessAmplitude:100];
-                                return;
-                            }
+                    periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
+                                                                                queue:dispatch_queue_create("eventQueue", NULL)
+                                                                           usingBlock:^(CMTime time) {
+                        if ([assetReader status] == AVAssetReaderStatusCompleted) {
+                            // Got all the data we need, kill this block.
+                            [player removeTimeObserver:periodicTimeObserver];
+//                            [self postProcessAmplitude:200];
+                            audioReady = YES;
                             
-                            if ([assetReader status] == AVAssetReaderStatusReading) {
-                                AVAssetReaderTrackOutput *output = [[assetReader outputs] objectAtIndex:0];
-                                CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
+                            return;
+                        }
+                        
+                        if ([assetReader status] == AVAssetReaderStatusReading) {
+                            AVAssetReaderTrackOutput *output = [[assetReader outputs] objectAtIndex:0];
+                            CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
+                            
+                            
+                            while( sampleBuffer != NULL ) {
+                                sampleBuffer = [output copyNextSampleBuffer];
                                 
+                                if( sampleBuffer == NULL )
+                                    continue;
                                 
-                                 while( sampleBuffer != NULL ) {
-                                     sampleBuffer = [output copyNextSampleBuffer];
-                                     
-                                     if( sampleBuffer == NULL )
-                                         continue;
-                                     
-                                     CMBlockBufferRef buffer = CMSampleBufferGetDataBuffer( sampleBuffer );
-                                     
-                                     size_t lengthAtOffset;
-                                     size_t totalLength;
-                                     char* data;
-                                     
-                                     if( CMBlockBufferGetDataPointer( buffer, 0, &lengthAtOffset, &totalLength, &data ) != noErr )
-                                     {
-                                         NSLog( @"error!" );
-                                         break;
-                                     }
-                                     
-                                     CMItemCount numSamplesInBuffer = CMSampleBufferGetNumSamples(sampleBuffer);
-                                     
-                                     AudioBufferList audioBufferList;
-                                     
-                                     CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
-                                                                                             sampleBuffer,
-                                                                                             NULL,
-                                                                                             &audioBufferList,
-                                                                                             sizeof(audioBufferList),
-                                                                                             NULL,
-                                                                                             NULL,
-                                                                                             kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,  // pass in something else
-                                                                                             &buffer
-                                                                                             );
-                                                                          
-                                     for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
-                                         SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
-                                         
-//                                         NSLog(@"LOOK AT ALL THE SAMPLES %ld", numSamplesInBuffer);
-
-                                         for (int i = 0; i < numSamplesInBuffer; i++) {
-                                             [leftVolume addObject:[NSNumber numberWithFloat:samples[i]]];
-                                             minVolume = MIN(minVolume, samples[i]);
-                                             maxVolume = MAX(maxVolume, samples[i]);
-                                         }
-                                     }
-                                     
-                                     CFRelease( buffer );
-                                     CFRelease( sampleBuffer );
-                                 }
+                                CMBlockBufferRef buffer = CMSampleBufferGetDataBuffer( sampleBuffer );
+                                
+                                size_t lengthAtOffset;
+                                size_t totalLength;
+                                char* data;
+                                
+                                if( CMBlockBufferGetDataPointer( buffer, 0, &lengthAtOffset, &totalLength, &data ) != noErr )
+                                {
+                                    NSLog( @"error!" );
+                                    break;
+                                }
+                                
+                                CMItemCount numSamplesInBuffer = CMSampleBufferGetNumSamples(sampleBuffer);
+                                
+                                AudioBufferList audioBufferList;
+                                
+                                CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+                                                                                        sampleBuffer,
+                                                                                        NULL,
+                                                                                        &audioBufferList,
+                                                                                        sizeof(audioBufferList),
+                                                                                        NULL,
+                                                                                        NULL,
+                                                                                        kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,  // pass in something else
+                                                                                        &buffer
+                                                                                        );
+                                
+                                for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
+                                    SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
+                                    
+                                    //                                         NSLog(@"LOOK AT ALL THE SAMPLES %ld", numSamplesInBuffer);
+                                    
+                                    for (int i = 0; i < numSamplesInBuffer; i++) {
+                                        [leftVolume addObject:[NSNumber numberWithFloat:samples[i]]];
+                                        minVolume = MIN(minVolume, samples[i]);
+                                        maxVolume = MAX(maxVolume, samples[i]);
+                                    }
+                                }
+                                
+                                CFRelease( buffer );
+                                CFRelease( sampleBuffer );
                             }
-//                        });
+                        }
                     }];
                 }
-                 
+
                 ready = YES;
                 loading = NO;
             }
@@ -215,6 +218,7 @@ int count = 0;
 
 - (BOOL) isLoading { return loading; }
 - (BOOL) isReady { return ready; }
+- (BOOL) isAudioReady { return audioReady; }
 
 - (CGSize) getVideoSize {
     return videoSize;
@@ -282,6 +286,9 @@ int count = 0;
 
 - (void) postProcessAmplitude:(float)damping
 {
+    float newMinVolume = CGFLOAT_MAX;
+    float newMaxVolume = CGFLOAT_MIN;
+    
     for (int i = 0; i < [leftVolume count]; i++) {
         float avg = 0;
         if (i < damping / 2) {
@@ -301,8 +308,16 @@ int count = 0;
         }
         
         avg /= damping;
+        
+        newMinVolume = MIN(newMinVolume, avg);
+        newMaxVolume = MAX(newMaxVolume, avg);
         [leftVolume setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
     }
+    
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        minVolume = newMinVolume;
+        maxVolume = newMaxVolume;
+    });
 }
 
 @end

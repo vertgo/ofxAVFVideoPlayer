@@ -33,6 +33,7 @@
     
     BOOL loading;
     BOOL ready;
+    BOOL audioReady;
     BOOL deallocWhenReady;
     
     id periodicTimeObserver;
@@ -54,6 +55,7 @@
 - (void) playerItemDidReachEnd:(NSNotification *) notification;
 //- (void) update;
 - (BOOL) isReady;
+- (BOOL) isAudioReady;
 - (BOOL) isLoading;
 - (void) render;
 

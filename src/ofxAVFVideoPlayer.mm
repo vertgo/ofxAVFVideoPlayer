@@ -126,7 +126,7 @@ float ofxAVFVideoPlayer::getAmplitude() {
 }
 
 float ofxAVFVideoPlayer::getAmplitudeAt(float pos) {
-    if(!moviePlayer || ![moviePlayer isReady] || [moviePlayer.leftVolume count] == 0 || !bInitialized) {
+    if(!moviePlayer || ![moviePlayer isAudioReady] || [moviePlayer.leftVolume count] == 0 || !bInitialized) {
         return 0;
     }
     
