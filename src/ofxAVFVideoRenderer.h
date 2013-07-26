@@ -21,7 +21,8 @@
     AVPlayerLayer *playerLayer;
     AVAssetReader *assetReader;
     
-    NSMutableArray * amplitudes;
+    NSMutableData *amplitudes;
+    int numAmplitudes;
     float maxAmplitude;
     
     CARenderer *layerRenderer;
@@ -42,7 +43,8 @@
     @property (nonatomic, retain) AVAssetReader *assetReader;
     @property (nonatomic, retain) CARenderer *layerRenderer;
 
-    @property (nonatomic, retain) NSMutableArray * amplitudes;
+    @property (nonatomic, retain) NSMutableData *amplitudes;
+    @property (nonatomic, assign) int numAmplitudes;
     @property (nonatomic, assign) float maxAmplitude;
 
 - (void) loadFile:(NSString *)filename;
@@ -55,7 +57,7 @@
 - (BOOL) isLoading;
 - (void) render;
 
-- (void)postProcessAmplitude:(float)damping;
+//- (void)postProcessAmplitude:(float)damping;
 
 - (CGSize) getVideoSize;
 - (CMTime) getVideoDuration;

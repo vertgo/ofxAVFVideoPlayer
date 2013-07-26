@@ -10,7 +10,7 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
-@synthesize amplitudes, maxAmplitude;
+@synthesize amplitudes, numAmplitudes, maxAmplitude;
 
 int count = 0;
 
@@ -18,7 +18,7 @@ int count = 0;
 {
     self = [super init];
     if (self) {
-        amplitudes = [[NSMutableArray array] retain];
+        amplitudes = [[NSMutableData data] retain];
     }
     return self;
 }
@@ -31,7 +31,10 @@ int count = 0;
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
     
-    [amplitudes removeAllObjects];
+    if (amplitudes) {
+        [amplitudes setLength:0];
+    }
+    numAmplitudes = 0;
     maxAmplitude = 0;
     
     NSLog(@"Trying to load %@", filename);
@@ -151,11 +154,12 @@ int count = 0;
                                 for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
                                     SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
                                     
-                                    //                                         NSLog(@"LOOK AT ALL THE SAMPLES %ld", numSamplesInBuffer);
+                                    numAmplitudes += numSamplesInBuffer;
                                     
                                     for (int i = 0; i < numSamplesInBuffer; i++) {
-                                        [amplitudes addObject:[NSNumber numberWithFloat:samples[i]]];
-                                        maxAmplitude = MAX(maxAmplitude, ABS(samples[i]));
+                                        float amp = samples[i];
+                                        [amplitudes appendBytes:&amp length:sizeof(float)];
+                                        maxAmplitude = MAX(maxAmplitude, ABS(amp));
                                     }
                                 }
                                 
@@ -205,7 +209,8 @@ int count = 0;
         if(self.playerItem) [self.playerItem release];
         if(self.playerLayer) [self.playerLayer release];
         
-        if (self.amplitudes) [self.amplitudes release];
+        if (amplitudes) [amplitudes release];
+        numAmplitudes = 0;
         
         if(!deallocWhenReady) [super dealloc];
     }
@@ -279,37 +284,37 @@ int count = 0;
     glFinish(); //Rendering needs to be done before passing texture to video frame
 }
 
-- (void) postProcessAmplitude:(float)damping
-{
-    float newmaxAmplitude = 0;
-    
-    for (int i = 0; i < [amplitudes count]; i++) {
-        float avg = 0;
-        if (i < damping / 2) {
-            for (int j = 0; j < damping; j++) {
-                avg += [[amplitudes objectAtIndex:j] floatValue];
-            }
-        }
-        else if (i > [amplitudes count] - damping / 2 - 1) {
-            for (int j = [amplitudes count] - 1 - damping; j < [amplitudes count] - 1; j++) {
-                avg += [[amplitudes objectAtIndex:j] floatValue];
-            }
-        }
-        else {
-            for (int j = i - damping / 2; j <  i + damping / 2; j++) {
-                avg += [[amplitudes objectAtIndex:j] floatValue];
-            }
-        }
-        
-        avg /= damping;
-        
-        newmaxAmplitude = MAX(newmaxAmplitude, ABS(avg));
-        [amplitudes setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
-    }
-    
-    dispatch_sync(dispatch_get_main_queue(), ^{
-        maxAmplitude = newmaxAmplitude;
-    });
-}
+//- (void) postProcessAmplitude:(float)damping
+//{
+//    float newmaxAmplitude = 0;
+//    
+//    for (int i = 0; i < numAmplitudes; i++) {
+//        float avg = 0;
+//        if (i < damping / 2) {
+//            for (int j = 0; j < damping; j++) {
+//                avg += numAmplitudes;
+//            }
+//        }
+//        else if (i > numAmplitudes - damping / 2 - 1) {
+//            for (int j = numAmplitudes - 1 - damping; j < numAmplitudes - 1; j++) {
+//                avg += amplitudes[j];
+//            }
+//        }
+//        else {
+//            for (int j = i - damping / 2; j <  i + damping / 2; j++) {
+//                avg += amplitudes[j];
+//            }
+//        }
+//        
+//        avg /= damping;
+//        
+//        newmaxAmplitude = MAX(newmaxAmplitude, ABS(avg));
+//        amplitudes[i] = avg;
+//    }
+//    
+//    dispatch_sync(dispatch_get_main_queue(), ^{
+//        maxAmplitude = newmaxAmplitude;
+//    });
+//}
 
 @end
