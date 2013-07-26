@@ -10,7 +10,7 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
-@synthesize leftVolume, rightVolume, maxVolume;
+@synthesize amplitudes, maxAmplitude;
 
 int count = 0;
 
@@ -18,8 +18,7 @@ int count = 0;
 {
     self = [super init];
     if (self) {
-        leftVolume = [[NSMutableArray array] retain];
-        rightVolume = [[NSMutableArray array] retain];
+        amplitudes = [[NSMutableArray array] retain];
     }
     return self;
 }
@@ -32,9 +31,8 @@ int count = 0;
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
     
-    [leftVolume removeAllObjects];
-    [rightVolume removeAllObjects];
-    maxVolume = 0;
+    [amplitudes removeAllObjects];
+    maxAmplitude = 0;
     
     NSLog(@"Trying to load %@", filename);
     
@@ -156,8 +154,8 @@ int count = 0;
                                     //                                         NSLog(@"LOOK AT ALL THE SAMPLES %ld", numSamplesInBuffer);
                                     
                                     for (int i = 0; i < numSamplesInBuffer; i++) {
-                                        [leftVolume addObject:[NSNumber numberWithFloat:samples[i]]];
-                                        maxVolume = MAX(maxVolume, ABS(samples[i]));
+                                        [amplitudes addObject:[NSNumber numberWithFloat:samples[i]]];
+                                        maxAmplitude = MAX(maxAmplitude, ABS(samples[i]));
                                     }
                                 }
                                 
@@ -207,8 +205,7 @@ int count = 0;
         if(self.playerItem) [self.playerItem release];
         if(self.playerLayer) [self.playerLayer release];
         
-        if (self.leftVolume) [self.leftVolume release];
-        if (self.rightVolume) [self.rightVolume release];
+        if (self.amplitudes) [self.amplitudes release];
         
         if(!deallocWhenReady) [super dealloc];
     }
@@ -284,34 +281,34 @@ int count = 0;
 
 - (void) postProcessAmplitude:(float)damping
 {
-    float newMaxVolume = 0;
+    float newmaxAmplitude = 0;
     
-    for (int i = 0; i < [leftVolume count]; i++) {
+    for (int i = 0; i < [amplitudes count]; i++) {
         float avg = 0;
         if (i < damping / 2) {
             for (int j = 0; j < damping; j++) {
-                avg += [[leftVolume objectAtIndex:j] floatValue];
+                avg += [[amplitudes objectAtIndex:j] floatValue];
             }
         }
-        else if (i > [leftVolume count] - damping / 2 - 1) {
-            for (int j = [leftVolume count] - 1 - damping; j < [leftVolume count] - 1; j++) {
-                avg += [[leftVolume objectAtIndex:j] floatValue];
+        else if (i > [amplitudes count] - damping / 2 - 1) {
+            for (int j = [amplitudes count] - 1 - damping; j < [amplitudes count] - 1; j++) {
+                avg += [[amplitudes objectAtIndex:j] floatValue];
             }
         }
         else {
             for (int j = i - damping / 2; j <  i + damping / 2; j++) {
-                avg += [[leftVolume objectAtIndex:j] floatValue];
+                avg += [[amplitudes objectAtIndex:j] floatValue];
             }
         }
         
         avg /= damping;
         
-        newMaxVolume = MAX(newMaxVolume, ABS(avg));
-        [leftVolume setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
+        newmaxAmplitude = MAX(newmaxAmplitude, ABS(avg));
+        [amplitudes setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
     }
     
     dispatch_sync(dispatch_get_main_queue(), ^{
-        maxVolume = newMaxVolume;
+        maxAmplitude = newmaxAmplitude;
     });
 }
 

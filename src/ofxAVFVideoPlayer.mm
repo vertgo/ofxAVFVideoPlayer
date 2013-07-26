@@ -126,12 +126,12 @@ float ofxAVFVideoPlayer::getAmplitude() {
 }
 
 float ofxAVFVideoPlayer::getAmplitudeAt(float pos) {
-    if(!moviePlayer || ![moviePlayer isAudioReady] || [moviePlayer.leftVolume count] == 0 || !bInitialized) {
+    if(!moviePlayer || ![moviePlayer isAudioReady] || [moviePlayer.amplitudes count] == 0 || !bInitialized) {
         return 0;
     }
     
-    int idx = MIN(floor(pos * [moviePlayer.leftVolume count]), [moviePlayer.leftVolume count] - 1);
-    return ofMap([[moviePlayer.leftVolume objectAtIndex:idx] floatValue], -[moviePlayer maxVolume], [moviePlayer maxVolume], -1.0, 1.0);
+    int idx = MIN(floor(pos * [moviePlayer.amplitudes count]), [moviePlayer.amplitudes count] - 1);
+    return ofMap([[moviePlayer.amplitudes objectAtIndex:idx] floatValue], -[moviePlayer maxAmplitude], [moviePlayer maxAmplitude], -1.0, 1.0);
 }
 
 unsigned char* ofxAVFVideoPlayer::getPixels() {

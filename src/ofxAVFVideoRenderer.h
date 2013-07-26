@@ -21,9 +21,8 @@
     AVPlayerLayer *playerLayer;
     AVAssetReader *assetReader;
     
-    NSMutableArray * leftVolume;
-    NSMutableArray * rightVolume;
-    float maxVolume;
+    NSMutableArray * amplitudes;
+    float maxAmplitude;
     
     CARenderer *layerRenderer;
     
@@ -43,9 +42,8 @@
     @property (nonatomic, retain) AVAssetReader *assetReader;
     @property (nonatomic, retain) CARenderer *layerRenderer;
 
-    @property (nonatomic, retain) NSMutableArray * leftVolume;
-    @property (nonatomic, retain) NSMutableArray * rightVolume;
-    @property (nonatomic, assign) float maxVolume;
+    @property (nonatomic, retain) NSMutableArray * amplitudes;
+    @property (nonatomic, assign) float maxAmplitude;
 
 - (void) loadFile:(NSString *)filename;
 - (void) play;
