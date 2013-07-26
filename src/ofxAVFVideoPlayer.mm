@@ -131,7 +131,7 @@ float ofxAVFVideoPlayer::getAmplitudeAt(float pos) {
     }
     
     int idx = MIN(floor(pos * [moviePlayer.leftVolume count]), [moviePlayer.leftVolume count] - 1);
-    return ofMap([[moviePlayer.leftVolume objectAtIndex:idx] floatValue], [moviePlayer minVolume], [moviePlayer maxVolume], -1.0, 1.0);
+    return ofMap([[moviePlayer.leftVolume objectAtIndex:idx] floatValue], -[moviePlayer maxVolume], [moviePlayer maxVolume], -1.0, 1.0);
 }
 
 unsigned char* ofxAVFVideoPlayer::getPixels() {

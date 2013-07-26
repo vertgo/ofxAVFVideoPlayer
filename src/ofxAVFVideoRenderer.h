@@ -23,7 +23,6 @@
     
     NSMutableArray * leftVolume;
     NSMutableArray * rightVolume;
-    float minVolume;
     float maxVolume;
     
     CARenderer *layerRenderer;
@@ -46,7 +45,6 @@
 
     @property (nonatomic, retain) NSMutableArray * leftVolume;
     @property (nonatomic, retain) NSMutableArray * rightVolume;
-    @property (nonatomic, assign) float minVolume;
     @property (nonatomic, assign) float maxVolume;
 
 - (void) loadFile:(NSString *)filename;

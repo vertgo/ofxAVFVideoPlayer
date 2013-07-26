@@ -10,7 +10,7 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
-@synthesize leftVolume, rightVolume, minVolume, maxVolume;
+@synthesize leftVolume, rightVolume, maxVolume;
 
 int count = 0;
 
@@ -34,8 +34,7 @@ int count = 0;
     
     [leftVolume removeAllObjects];
     [rightVolume removeAllObjects];
-    minVolume = CGFLOAT_MAX;
-    maxVolume = CGFLOAT_MIN;
+    maxVolume = 0;
     
     NSLog(@"Trying to load %@", filename);
     
@@ -158,8 +157,7 @@ int count = 0;
                                     
                                     for (int i = 0; i < numSamplesInBuffer; i++) {
                                         [leftVolume addObject:[NSNumber numberWithFloat:samples[i]]];
-                                        minVolume = MIN(minVolume, samples[i]);
-                                        maxVolume = MAX(maxVolume, samples[i]);
+                                        maxVolume = MAX(maxVolume, ABS(samples[i]));
                                     }
                                 }
                                 
@@ -286,8 +284,7 @@ int count = 0;
 
 - (void) postProcessAmplitude:(float)damping
 {
-    float newMinVolume = CGFLOAT_MAX;
-    float newMaxVolume = CGFLOAT_MIN;
+    float newMaxVolume = 0;
     
     for (int i = 0; i < [leftVolume count]; i++) {
         float avg = 0;
@@ -309,13 +306,11 @@ int count = 0;
         
         avg /= damping;
         
-        newMinVolume = MIN(newMinVolume, avg);
-        newMaxVolume = MAX(newMaxVolume, avg);
+        newMaxVolume = MAX(newMaxVolume, ABS(avg));
         [leftVolume setObject:[NSNumber numberWithFloat:avg] atIndexedSubscript:i];
     }
     
     dispatch_sync(dispatch_get_main_queue(), ^{
-        minVolume = newMinVolume;
         maxVolume = newMaxVolume;
     });
 }
