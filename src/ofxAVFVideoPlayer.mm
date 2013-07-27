@@ -136,6 +136,10 @@ float ofxAVFVideoPlayer::getAmplitudeAt(float pos) {
     return ofMap(amp, -[moviePlayer maxAmplitude], [moviePlayer maxAmplitude], -1.0, 1.0);
 }
 
+int ofxAVFVideoPlayer::getNumAmplitudes() {
+    return [moviePlayer numAmplitudes];
+}
+
 float * ofxAVFVideoPlayer::getAllAmplitudes() {
     return (float *)[moviePlayer.amplitudes bytes];
 }
