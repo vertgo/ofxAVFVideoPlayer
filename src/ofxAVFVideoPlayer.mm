@@ -21,11 +21,17 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer() {
     
     pixelFormat = OF_PIXELS_RGB;
     currentLoopState = OF_LOOP_NORMAL;
+	
+	ofAddListener(ofEvents().exit, this, &ofxAVFVideoPlayer::exit);
     
 }
 
+void ofxAVFVideoPlayer::exit(ofEventArgs& args){
+	close();
+}
+
 ofxAVFVideoPlayer::~ofxAVFVideoPlayer() {
-    close();
+
 }
 
 bool ofxAVFVideoPlayer::loadMovie(string path) {

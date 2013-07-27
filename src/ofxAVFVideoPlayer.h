@@ -104,7 +104,7 @@ protected:
     string moviePath;
     
     bool bInitialized;
-    
+    void exit(ofEventArgs& args);
     
     // updateTexture() pulls texture data from the movie AVFoundation
     // renderer into our internal ofTexture.
