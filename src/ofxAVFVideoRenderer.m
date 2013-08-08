@@ -10,7 +10,7 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
-@synthesize amplitudes, numAmplitudes, maxAmplitude;
+@synthesize amplitudes, numAmplitudes;
 
 int count = 0;
 
@@ -35,7 +35,6 @@ int count = 0;
         [amplitudes setLength:0];
     }
     numAmplitudes = 0;
-    maxAmplitude = 0;
     
     NSLog(@"Trying to load %@", filename);
     
@@ -94,16 +93,18 @@ int count = 0;
                         // Read the audio track data
                         NSMutableDictionary *bufferOptions = [NSMutableDictionary dictionary];
                         [bufferOptions setObject:[NSNumber numberWithInt:kAudioFormatLinearPCM] forKey:AVFormatIDKey];
-//                        [bufferOptions setObject:@44100 forKey:AVSampleRateKey];
-//                        [bufferOptions setObject:@2 forKey:AVNumberOfChannelsKey];
+                        [bufferOptions setObject:@44100 forKey:AVSampleRateKey];
+                        [bufferOptions setObject:@2 forKey:AVNumberOfChannelsKey];
 //                        [bufferOptions setObject:[NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)] forKey:AVChannelLayoutKey];
-//                        [bufferOptions setObject:@16 forKey:AVLinearPCMBitDepthKey];
-//                        [bufferOptions setObject:@NO forKey:AVLinearPCMIsBigEndianKey];
-//                        [bufferOptions setObject:@NO forKey:AVLinearPCMIsFloatKey];
-//                        [bufferOptions setObject:@NO forKey:AVLinearPCMIsNonInterleaved];
+                        [bufferOptions setObject:@32 forKey:AVLinearPCMBitDepthKey];
+                        [bufferOptions setObject:@NO forKey:AVLinearPCMIsBigEndianKey];
+                        [bufferOptions setObject:@YES forKey:AVLinearPCMIsFloatKey];
+                        [bufferOptions setObject:@NO forKey:AVLinearPCMIsNonInterleaved];
                         [assetReader addOutput:[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
                                                                                           outputSettings:bufferOptions]];
                         [assetReader startReading];
+                        
+                        count = 0;
                     
                         // Add a periodic time observer that will store the audio track data in a buffer that we can access later
                         periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
@@ -112,6 +113,8 @@ int count = 0;
                                                                                    if ([assetReader status] == AVAssetReaderStatusCompleted) {
                                                                                        // Got all the data we need, kill this block.
                                                                                        [player removeTimeObserver:periodicTimeObserver];
+                                                                                       
+                                                                                       numAmplitudes = [amplitudes length] / sizeof(float);
                                                                                        audioReady = YES;
                                                                                        
                                                                                        return;
@@ -121,21 +124,20 @@ int count = 0;
                                                                                        AVAssetReaderTrackOutput *output = [[assetReader outputs] objectAtIndex:0];
                                                                                        CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
                                                                                        
-                                                                                       while( sampleBuffer != NULL ) {
+                                                                                       while (sampleBuffer != NULL) {
                                                                                            sampleBuffer = [output copyNextSampleBuffer];
                                                                                            
-                                                                                           if( sampleBuffer == NULL )
+                                                                                           if (sampleBuffer == NULL)
                                                                                                continue;
                                                                                            
-                                                                                           CMBlockBufferRef buffer = CMSampleBufferGetDataBuffer( sampleBuffer );
+                                                                                           CMBlockBufferRef buffer = CMSampleBufferGetDataBuffer(sampleBuffer);
                                                                                            
                                                                                            size_t lengthAtOffset;
                                                                                            size_t totalLength;
                                                                                            char* data;
                                                                                            
-                                                                                           if( CMBlockBufferGetDataPointer( buffer, 0, &lengthAtOffset, &totalLength, &data ) != noErr )
-                                                                                           {
-                                                                                               NSLog( @"error!" );
+                                                                                           if (CMBlockBufferGetDataPointer(buffer, 0, &lengthAtOffset, &totalLength, &data) != noErr) {
+                                                                                               NSLog(@"error!");
                                                                                                break;
                                                                                            }
                                                                                            
@@ -143,31 +145,22 @@ int count = 0;
                                                                                            
                                                                                            AudioBufferList audioBufferList;
                                                                                            
-                                                                                           CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
-                                                                                                                                                   sampleBuffer,
+                                                                                           CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(sampleBuffer,
                                                                                                                                                    NULL,
                                                                                                                                                    &audioBufferList,
                                                                                                                                                    sizeof(audioBufferList),
                                                                                                                                                    NULL,
                                                                                                                                                    NULL,
                                                                                                                                                    kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,  // pass in something else
-                                                                                                                                                   &buffer
-                                                                                                                                                   );
+                                                                                                                                                   &buffer);
                                                                                            
-                                                                                           for (int bufferCount=0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
-                                                                                               SInt16* samples = (SInt16 *)audioBufferList.mBuffers[bufferCount].mData;
-                                                                                               
-                                                                                               numAmplitudes += numSamplesInBuffer;
-                                                                                               
-                                                                                               for (int i = 0; i < numSamplesInBuffer * 2; i++) {
-                                                                                                   short amp = samples[i];
-                                                                                                   [amplitudes appendBytes:&amp length:sizeof(short)];
-                                                                                                   maxAmplitude = MAX(maxAmplitude, ABS(amp));
-                                                                                               }
+                                                                                           for (int bufferCount = 0; bufferCount < audioBufferList.mNumberBuffers; bufferCount++) {
+                                                                                               [amplitudes appendBytes:audioBufferList.mBuffers[bufferCount].mData
+                                                                                                                length:audioBufferList.mBuffers[bufferCount].mDataByteSize];
                                                                                            }
-                                                                                           
-                                                                                           CFRelease( buffer );
-                                                                                           CFRelease( sampleBuffer );
+                                                                                                                                                                                      
+                                                                                           CFRelease(buffer);
+                                                                                           CFRelease(sampleBuffer);
                                                                                        }
                                                                                    }
                                                                                }];
@@ -180,8 +173,9 @@ int count = 0;
             else {
                 loading = NO;
                 ready = NO;
-                NSLog(@"There was an error loading the file:\n%@", error);
+                NSLog(@"There was an error loading the file: %@", error);
             }
+            
             // If dealloc is called immediately after loadFile, we have to defer releasing properties
             if(deallocWhenReady) [self dealloc];
             [pool release];
