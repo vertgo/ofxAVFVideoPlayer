@@ -86,7 +86,7 @@ public:
     bool                isLoading();
     bool                isPlaying();
     bool                errorLoading();
-    
+    bool                isAudioLoaded();    
     
     void                firstFrame();
     void                nextFrame();

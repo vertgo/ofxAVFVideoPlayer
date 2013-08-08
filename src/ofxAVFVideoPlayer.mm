@@ -294,6 +294,10 @@ bool ofxAVFVideoPlayer::errorLoading() {
     return (![moviePlayer isLoading] && ![moviePlayer isReady]);
 }
 
+bool ofxAVFVideoPlayer::isAudioLoaded() {
+    return (moviePlayer && [moviePlayer isAudioReady]);
+}
+
 bool ofxAVFVideoPlayer::isPlaying() {
     
 }
