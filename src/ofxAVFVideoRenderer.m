@@ -287,37 +287,4 @@ int count = 0;
     glFinish(); //Rendering needs to be done before passing texture to video frame
 }
 
-//- (void) postProcessAmplitude:(float)damping
-//{
-//    float newmaxAmplitude = 0;
-//
-//    for (int i = 0; i < numAmplitudes; i++) {
-//        float avg = 0;
-//        if (i < damping / 2) {
-//            for (int j = 0; j < damping; j++) {
-//                avg += numAmplitudes;
-//            }
-//        }
-//        else if (i > numAmplitudes - damping / 2 - 1) {
-//            for (int j = numAmplitudes - 1 - damping; j < numAmplitudes - 1; j++) {
-//                avg += amplitudes[j];
-//            }
-//        }
-//        else {
-//            for (int j = i - damping / 2; j <  i + damping / 2; j++) {
-//                avg += amplitudes[j];
-//            }
-//        }
-//
-//        avg /= damping;
-//
-//        newmaxAmplitude = MAX(newmaxAmplitude, ABS(avg));
-//        amplitudes[i] = avg;
-//    }
-//
-//    dispatch_sync(dispatch_get_main_queue(), ^{
-//        maxAmplitude = newmaxAmplitude;
-//    });
-//}
-
 @end
