@@ -80,13 +80,22 @@ int count = 0;
                 // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
                 self.layerRenderer.bounds = CGRectMake(-videoSize.width/2, -videoSize.height/2, videoSize.width, videoSize.height);
                 self.playerLayer.bounds = self.layerRenderer.bounds;
-                                
-                AVAssetTrack *audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
-                NSError *error = nil;
-                assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
-                if (error!=nil) {
+				
+				NSError *error = nil;
+				AVAssetTrack *audioTrack = nil;
+				if( [asset tracksWithMediaType: AVMediaTypeAudio].count > 0){
+					
+					 audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
+					assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
+				}
+					
+                if (error != nil ) {
                     NSLog(@"Unable to create asset reader %@", [error localizedDescription]);
-                } else {
+				}
+				else if(audioTrack == nil){
+                    NSLog(@"Unable to create asset reader, no audio");
+                }
+				else {
                     NSMutableDictionary *bufferOptions = [NSMutableDictionary dictionary];
                     [bufferOptions setObject:[NSNumber numberWithInt:kAudioFormatLinearPCM] forKey:AVFormatIDKey];
 //                                        [bufferOptions setObject:[NSNumber numberWithInt:44100] forKey:AVSampleRateKey];
@@ -100,6 +109,7 @@ int count = 0;
                                                                                       outputSettings:bufferOptions]];
                     [assetReader startReading];
                 }
+				
                 if (audioTrack != nil) {
                     periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
                                                                                 queue:dispatch_queue_create("eventQueue", NULL)
@@ -169,7 +179,7 @@ int count = 0;
                         }
                     }];
                 }
-
+				
                 ready = YES;
                 loading = NO;
             }
