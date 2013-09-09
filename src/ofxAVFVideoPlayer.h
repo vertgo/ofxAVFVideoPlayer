@@ -31,8 +31,8 @@ public:
     void                play();
     void                stop();
     
-    float               getAmplitude();
-    float               getAmplitudeAt(float pos);
+    float               getAmplitude(int channel = 0);
+    float               getAmplitudeAt(float pos, int channel = 0);
     float *             getAllAmplitudes();
     int                 getNumAmplitudes();
     
@@ -86,7 +86,7 @@ public:
     bool                isLoading();
     bool                isPlaying();
     bool                errorLoading();
-    
+    bool                isAudioLoaded();    
     
     void                firstFrame();
     void                nextFrame();
