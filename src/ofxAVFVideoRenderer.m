@@ -10,7 +10,10 @@
 
 @implementation AVFVideoRenderer
 @synthesize player, playerItem, playerLayer, assetReader, layerRenderer;
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
 @synthesize amplitudes, numAmplitudes;
+#endif
 
 int count = 0;
 
@@ -79,51 +82,8 @@ int count = 0;
                 // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
                 self.layerRenderer.bounds = CGRectMake(-videoSize.width/2, -videoSize.height/2, videoSize.width, videoSize.height);
                 self.playerLayer.bounds = self.layerRenderer.bounds;
-//<<<<<<< HEAD
-//				
-//				NSError *error = nil;
-//				AVAssetTrack *audioTrack = nil;
-//				if( [asset tracksWithMediaType: AVMediaTypeAudio].count > 0){
-//					
-//					 audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
-//					assetReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
-//				}
-//					
-//                if (error != nil ) {
-//                    NSLog(@"Unable to create asset reader %@", [error localizedDescription]);
-//				}
-//				else if(audioTrack == nil){
-//                    NSLog(@"Unable to create asset reader, no audio");
-//                }
-//				else {
-//                    NSMutableDictionary *bufferOptions = [NSMutableDictionary dictionary];
-//                    [bufferOptions setObject:[NSNumber numberWithInt:kAudioFormatLinearPCM] forKey:AVFormatIDKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithInt:44100] forKey:AVSampleRateKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithInt:2] forKey:AVNumberOfChannelsKey];
-//                    //  [bufferOptions setObject:[NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)] forKey:AVChannelLayoutKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithInt:16] forKey:AVLinearPCMBitDepthKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsBigEndianKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsFloatKey];
-////                                        [bufferOptions setObject:[NSNumber numberWithBool:NO] forKey:AVLinearPCMIsNonInterleaved];
-//                    [assetReader addOutput:[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
-//                                                                                      outputSettings:bufferOptions]];
-//                    [assetReader startReading];
-//                }
-//				
-//                if (audioTrack != nil) {
-//                    periodicTimeObserver = [player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
-//                                                                                queue:dispatch_queue_create("eventQueue", NULL)
-//                                                                           usingBlock:^(CMTime time) {
-//                        if ([assetReader status] == AVAssetReaderStatusCompleted) {
-//                            // Got all the data we need, kill this block.
-//                            [player removeTimeObserver:periodicTimeObserver];
-////                            [self postProcessAmplitude:200];
-//                            audioReady = YES;
-//                            
-//                            return;
-//                        }
-//=======
-                
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
                 NSArray *audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
                 if ([audioTracks count] > 0) {
                     AVAssetTrack *audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
@@ -147,7 +107,6 @@ int count = 0;
                         [assetReader addOutput:[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
                                                                                           outputSettings:bufferOptions]];
                         [assetReader startReading];
-//>>>>>>> 4490cc85157fd003b3a315e12445466cc31fbc29
                         
                         count = 0;
                     
@@ -211,11 +170,7 @@ int count = 0;
                                                                                }];
                     }
                 }
-//<<<<<<< HEAD
-//				
-//=======
-//                
-//>>>>>>> 4490cc85157fd003b3a315e12445466cc31fbc29
+#endif
                 ready = YES;
                 loading = NO;
             }

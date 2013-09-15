@@ -30,12 +30,13 @@ public:
     void                update();
     void                play();
     void                stop();
-    
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
     float               getAmplitude(int channel = 0);
     float               getAmplitudeAt(float pos, int channel = 0);
     float *             getAllAmplitudes();
     int                 getNumAmplitudes();
-    
+#endif
+	
     OF_DEPRECATED_MSG("Use getTexture()->bind() instead. Ensure decodeMode != OF_QTKIT_DECODE_PIXELS_ONLY.", void bind());
     OF_DEPRECATED_MSG("Use getTexture()->unbind() instead. Ensure decodeMode != OF_QTKIT_DECODE_PIXELS_ONLY.", void unbind());
     

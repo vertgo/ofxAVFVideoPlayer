@@ -36,14 +36,19 @@
     
     id periodicTimeObserver;
 }
-    @property (nonatomic, retain) AVPlayer *player;
-    @property (nonatomic, retain) AVPlayerItem *playerItem;
-    @property (nonatomic, retain) AVPlayerLayer *playerLayer;
-    @property (nonatomic, retain) AVAssetReader *assetReader;
-    @property (nonatomic, retain) CARenderer *layerRenderer;
 
-    @property (nonatomic, retain) NSMutableData *amplitudes;
-    @property (nonatomic, assign) int numAmplitudes;
+@property (nonatomic, retain) AVPlayer *player;
+@property (nonatomic, retain) AVPlayerItem *playerItem;
+@property (nonatomic, retain) AVPlayerLayer *playerLayer;
+@property (nonatomic, retain) AVAssetReader *assetReader;
+@property (nonatomic, retain) CARenderer *layerRenderer;
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
+@property (nonatomic, retain) NSMutableData *amplitudes;
+@property (nonatomic, assign) int numAmplitudes;
+#endif
+
+
 
 - (void) loadFile:(NSString *)filename;
 - (void) play;

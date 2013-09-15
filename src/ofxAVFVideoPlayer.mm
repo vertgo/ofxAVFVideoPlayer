@@ -127,6 +127,7 @@ bool ofxAVFVideoPlayer::isFrameNew() {
     return true;
 }
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
 float ofxAVFVideoPlayer::getAmplitude(int channel) {
     return getAmplitudeAt(getPosition(), channel);
 }
@@ -162,6 +163,7 @@ int ofxAVFVideoPlayer::getNumAmplitudes() {
 float * ofxAVFVideoPlayer::getAllAmplitudes() {
     return (float *)[moviePlayer.amplitudes bytes];
 }
+#endif
 
 unsigned char* ofxAVFVideoPlayer::getPixels() {
     if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
