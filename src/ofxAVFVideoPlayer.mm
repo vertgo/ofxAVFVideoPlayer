@@ -203,11 +203,11 @@ float ofxAVFVideoPlayer::getPositionInSeconds() {
 }
 
 float ofxAVFVideoPlayer::getSpeed() {
-    
+    return 0;
 }
 
 ofLoopType ofxAVFVideoPlayer::getLoopState() {
-    
+	retun OF_LOOP_NONE;
 }
 
 float ofxAVFVideoPlayer::getDuration() {
@@ -215,15 +215,15 @@ float ofxAVFVideoPlayer::getDuration() {
 }
 
 bool ofxAVFVideoPlayer::getIsMovieDone() {
-    
+    return false;
 }
 
 int ofxAVFVideoPlayer::getTotalNumFrames() {
-    
+    return 0;
 }
 
 int ofxAVFVideoPlayer::getCurrentFrame() {
-    
+    return 0;
 }
 
 void ofxAVFVideoPlayer::setPaused(bool bPaused) {
