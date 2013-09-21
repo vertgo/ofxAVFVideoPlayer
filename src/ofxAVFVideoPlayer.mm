@@ -207,7 +207,7 @@ float ofxAVFVideoPlayer::getSpeed() {
 }
 
 ofLoopType ofxAVFVideoPlayer::getLoopState() {
-	retun OF_LOOP_NONE;
+	return OF_LOOP_NONE;
 }
 
 float ofxAVFVideoPlayer::getDuration() {
