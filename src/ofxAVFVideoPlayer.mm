@@ -314,7 +314,7 @@ bool ofxAVFVideoPlayer::isAudioLoaded() {
 }
 
 bool ofxAVFVideoPlayer::isPlaying() {
-    
+    return (moviePlayer && [moviePlayer isPlaying]);
 }
 
 void ofxAVFVideoPlayer::firstFrame() {

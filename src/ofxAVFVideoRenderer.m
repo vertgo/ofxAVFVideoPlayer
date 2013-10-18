@@ -220,7 +220,7 @@ int count = 0;
 - (BOOL) isLoading { return loading; }
 - (BOOL) isReady { return ready; }
 - (BOOL) isAudioReady { return audioReady; }
-
+- (BOOL) isPlaying { return self.player.rate != 0; }
 - (CGSize) getVideoSize {
     return videoSize;
 }

@@ -33,7 +33,7 @@
     BOOL ready;
     BOOL audioReady;
     BOOL deallocWhenReady;
-    
+	
     id periodicTimeObserver;
 }
 
@@ -58,6 +58,8 @@
 - (BOOL) isReady;
 - (BOOL) isAudioReady;
 - (BOOL) isLoading;
+- (BOOL) isPlaying;
+
 - (void) render;
 
 //- (void)postProcessAmplitude:(float)damping;
