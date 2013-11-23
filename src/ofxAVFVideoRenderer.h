@@ -16,10 +16,23 @@
 
 @interface AVFVideoRenderer : NSObject
 {
-    AVPlayer *player;
-    AVPlayerItem *playerItem;
-    AVPlayerLayer *playerLayer;
-    AVAssetReader *assetReader;
+    AVPlayer * _player;
+    AVPlayerItemVideoOutput * _playerItemVideoOutput;
+    AVPlayerItem * _playerItem;
+//    AVPlayerLayer *playerLayer;
+//    AVAssetReader *assetReader;
+    
+    CVOpenGLTextureCacheRef _textureCache;
+	CVOpenGLTextureRef _latestTextureFrame;
+	CVPixelBufferRef _latestPixelFrame;
+    
+    BOOL useTexture;
+    BOOL frameIsNew;
+    
+    double outputPlayheadPosition;
+    double outputDuration;
+    double outputMovieTime;
+    BOOL outputMovieDidEnd;
     
     NSMutableData *amplitudes;
     int numAmplitudes;
@@ -38,10 +51,25 @@
 }
 
 @property (nonatomic, retain) AVPlayer *player;
+@property (nonatomic, retain) AVPlayerItemVideoOutput *playerItemVideoOutput;
 @property (nonatomic, retain) AVPlayerItem *playerItem;
-@property (nonatomic, retain) AVPlayerLayer *playerLayer;
-@property (nonatomic, retain) AVAssetReader *assetReader;
-@property (nonatomic, retain) CARenderer *layerRenderer;
+//@property (nonatomic, retain) AVPlayerLayer *playerLayer;
+//@property (nonatomic, retain) AVAssetReader *assetReader;
+//@property (nonatomic, retain) CARenderer *layerRenderer;
+
+@property (nonatomic, readonly) BOOL textureAllocated;
+@property (nonatomic, readonly) GLuint textureID;
+@property (nonatomic, readonly) GLenum textureTarget;
+
+- (void)bindTexture;
+- (void)unbindTexture;
+
+@property (nonatomic, readonly) BOOL useTexture;
+
+@property (nonatomic, assign) double outputPlayheadPosition;
+@property (nonatomic, assign) double outputDuration;
+@property (nonatomic, assign) double outputMovieTime;
+@property (nonatomic, assign) BOOL outputMovieDidEnd;
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
 @property (nonatomic, retain) NSMutableData *amplitudes;
@@ -59,6 +87,8 @@
 - (BOOL) isAudioReady;
 - (BOOL) isLoading;
 - (BOOL) isPlaying;
+
+- (void)update;
 
 - (void) render;
 

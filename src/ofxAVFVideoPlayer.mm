@@ -98,9 +98,10 @@ void ofxAVFVideoPlayer::update() {
         
         // Render movie into FBO so we can get a texture
 
-        fbo.begin();
-        [moviePlayer render];
-        fbo.end();
+//        fbo.begin();
+//        [moviePlayer render];
+//        fbo.end();
+        [moviePlayer update];
         
         bHavePixelsChanged = true;
     }
@@ -181,10 +182,18 @@ ofPixelsRef ofxAVFVideoPlayer::getPixelsRef() {
     return pixels;
 }
 
-ofTexture* ofxAVFVideoPlayer::getTexture() {
-    if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
-    
-    return &fbo.getTextureReference();
+//--------------------------------------------------------------
+ofTexture* ofxAVFVideoPlayer::getTexture()
+{
+//    if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
+//    
+//    return &fbo.getTextureReference();
+    if (moviePlayer.textureAllocated) {
+		updateTexture();
+        return &tex;
+	}
+
+    return NULL;
 }
 
 ofTexture& ofxAVFVideoPlayer::getTextureReference() {
@@ -272,14 +281,22 @@ ofPixelFormat ofxAVFVideoPlayer::getPixelFormat() {
     
 }
 
-void ofxAVFVideoPlayer::draw(float x, float y, float w, float h) {
-    if(!bInitialized) return;
-    fbo.draw(x, y, w, h);
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::draw(float x, float y)
+{
+    if (!bInitialized) return;
+    
+    draw(x, y, getWidth(), getHeight());
 }
 
-void ofxAVFVideoPlayer::draw(float x, float y) {
-    if(!bInitialized) return;
-    fbo.draw(x, y);
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::draw(float x, float y, float w, float h)
+{
+    if (!bInitialized) return;
+    
+    updateTexture();
+	tex.draw(x, y, w, h);
+//    fbo.draw(x, y, w, h);
 }
 
 float ofxAVFVideoPlayer::getWidth() {
@@ -329,8 +346,21 @@ void ofxAVFVideoPlayer::previousFrame() {
     
 }
 
-void ofxAVFVideoPlayer::updateTexture() {
-    
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::updateTexture()
+{
+    if (moviePlayer.textureAllocated) {
+		tex.setUseExternalTextureID(moviePlayer.textureID);
+		
+		ofTextureData& data = tex.getTextureData();
+		data.textureTarget = moviePlayer.textureTarget;
+		data.width = getWidth();
+		data.height = getHeight();
+		data.tex_w = getWidth();
+		data.tex_h = getHeight();
+		data.tex_t = getWidth();
+		data.tex_u = getHeight();
+	}
 }
 
 void ofxAVFVideoPlayer::reallocatePixels() {
