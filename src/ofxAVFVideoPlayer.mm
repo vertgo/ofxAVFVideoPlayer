@@ -31,7 +31,7 @@ void ofxAVFVideoPlayer::exit(ofEventArgs& args){
 }
 
 ofxAVFVideoPlayer::~ofxAVFVideoPlayer() {
-
+	close();
 }
 
 bool ofxAVFVideoPlayer::loadMovie(string path) {
