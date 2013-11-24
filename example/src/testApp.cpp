@@ -27,8 +27,10 @@ void testApp::update()
 void testApp::draw()
 {
     video.draw(0, 0);
-    image.draw(video.getWidth(), 0);
-    
+	if(image.bAllocated()){
+		image.draw(video.getWidth(), 0);
+    }
+	
     // Draw a timeline at the bottom of the screen.
     ofNoFill();
     ofSetColor(255);
