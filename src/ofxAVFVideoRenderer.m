@@ -44,6 +44,7 @@
 
 @synthesize frameRate = _frameRate;
 @synthesize playbackRate = _playbackRate;
+@synthesize bLoops = _bLoops;
 
 #if NEW_SCHOOL
 @synthesize amplitudes = _amplitudes;
@@ -52,6 +53,7 @@
 
 int count = 0;
 
+//--------------------------------------------------------------
 - (id)init
 {
     self = [super init];
@@ -72,11 +74,13 @@ int count = 0;
         
         _frameRate = 0.0;
         _playbackRate = 1.0;
+        _bLoops = false;
     }
     return self;
 }
 
 #if NEW_SCHOOL
+//--------------------------------------------------------------
 - (NSDictionary *)pixelBufferAttributes
 {
     // kCVPixelFormatType_32ARGB, kCVPixelFormatType_32BGRA, kCVPixelFormatType_422YpCbCr8
@@ -387,8 +391,11 @@ int count = 0;
 {
     _bMovieDone = YES;
     
-    // if(loop)
-    //[self.player play];
+    if (self.bLoops) {
+        // Start over.
+        [self stop];
+        [self play];
+    }
 }
 
 //--------------------------------------------------------------

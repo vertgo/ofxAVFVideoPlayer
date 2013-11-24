@@ -42,6 +42,7 @@
     CMTime _duration;
     double _frameRate;
     double _playbackRate;
+    BOOL _bLoops;
     
     BOOL _bLoading;
     BOOL _bLoaded;
@@ -93,6 +94,7 @@
 @property (nonatomic, assign) int currentFrame;
 @property (nonatomic, assign) double position;
 @property (nonatomic, assign) double playbackRate;
+@property (nonatomic, assign, getter = loops, setter = setLoops:) BOOL bLoops;
 
 #if NEW_SCHOOL
 @property (nonatomic, retain, readonly) NSMutableData *amplitudes;

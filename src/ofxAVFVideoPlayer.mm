@@ -356,7 +356,12 @@ float ofxAVFVideoPlayer::getSpeed()
     return 0;
 }
 
-ofLoopType ofxAVFVideoPlayer::getLoopState() {
+//--------------------------------------------------------------
+ofLoopType ofxAVFVideoPlayer::getLoopState()
+{
+    if (moviePlayer && [moviePlayer loops])
+        return OF_LOOP_NORMAL;
+    
 	return OF_LOOP_NONE;
 }
 
@@ -398,8 +403,16 @@ void ofxAVFVideoPlayer::setPaused(bool bPaused)
     [moviePlayer setPaused:bPaused];
 }
 
-void ofxAVFVideoPlayer::setLoopState(ofLoopType state) {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setLoopState(ofLoopType state)
+{
+    if (moviePlayer) {
+        [moviePlayer setLoops:(state == OF_LOOP_NORMAL)];
+    }
     
+    if (state == OF_LOOP_PALINDROME) {
+        ofLogWarning("ofxAVFVideoPlayer::setLoopState") << "No palindrome yet, sorry!";
+    }
 }
 
 //--------------------------------------------------------------
