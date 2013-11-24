@@ -95,6 +95,7 @@
 @property (nonatomic, assign) double position;
 @property (nonatomic, assign) double playbackRate;
 @property (nonatomic, assign, getter = loops, setter = setLoops:) BOOL bLoops;
+@property (nonatomic, assign) float volume;
 
 #if NEW_SCHOOL
 @property (nonatomic, retain, readonly) NSMutableData *amplitudes;

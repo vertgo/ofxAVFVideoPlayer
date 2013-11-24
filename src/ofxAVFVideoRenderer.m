@@ -662,4 +662,16 @@ int count = 0;
     [self.player setRate:_playbackRate];
 }
 
+//--------------------------------------------------------------
+- (float)volume
+{
+    return self.player.volume;
+}
+
+//--------------------------------------------------------------
+- (void)setVolume:(float)volume
+{
+    [self.player setVolume:volume];
+}
+
 @end

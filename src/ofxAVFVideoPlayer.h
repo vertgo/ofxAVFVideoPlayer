@@ -76,15 +76,16 @@ public:
     bool                isPaused();
     float               getSpeed();
     ofLoopType          getLoopState();
+    float               getVolume();
     
     void                setPosition(float pct);
 	void                setTime(float seconds);
     void                setFrame(int frame); // frame 0 = first frame...
-    void                setVolume(float volume);
     void                setBalance(float balance);
     void                setPaused(bool bPaused);
     void                setSpeed(float speed);
     void                setLoopState(ofLoopType state);
+    void                setVolume(float volume);
     
     // ofxAVFVideoPlayer only supports OF_PIXELS_RGB and OF_PIXELS_RGBA.
     bool                setPixelFormat(ofPixelFormat pixelFormat);

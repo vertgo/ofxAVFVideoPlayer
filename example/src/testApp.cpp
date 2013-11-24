@@ -41,10 +41,13 @@ void testApp::draw()
     ofDrawBitmapStringHighlight("Rate: " + ofToString(video.getSpeed(), 2) + "\n" +
                                 "Time: " + ofToString(video.getCurrentTime(), 3) + " / " + ofToString(video.getDuration(), 3) + "\n" +
                                 "Frames: " + ofToString(video.getCurrentFrame()) + " / " + ofToString(video.getTotalNumFrames()) + "\n" +
-                                "Position: " + ofToString(video.getPosition() * 100, 1) + "%" + "\n"
+                                "Position: " + ofToString(video.getPosition() * 100, 1) + "%" + "\n" +
+                                "Volume: " + ofToString(video.getVolume(), 2) + "\n" +
+                                "\n" +
                                 "[a]/[s]: Play / Stop \n" +
                                 "[space]: Pause \n" +
-                                "[up]/[down]: Adjust Rate",
+                                "[up]/[down]: Adjust Rate \n" +
+                                "[mouse y]: Volume",
                                 10, 20);
 }
 
@@ -84,8 +87,9 @@ void testApp::keyReleased(int key){
 }
 
 //--------------------------------------------------------------
-void testApp::mouseMoved(int x, int y){
-
+void testApp::mouseMoved(int x, int y)
+{
+    video.setVolume(ofMap(y, 0, ofGetHeight(), 1.0, 0.0, true));
 }
 
 //--------------------------------------------------------------

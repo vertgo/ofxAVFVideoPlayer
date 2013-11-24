@@ -369,6 +369,16 @@ ofLoopType ofxAVFVideoPlayer::getLoopState()
 }
 
 //--------------------------------------------------------------
+float ofxAVFVideoPlayer::getVolume()
+{
+    if (moviePlayer) {
+        return moviePlayer.volume;
+    }
+    
+    return 0;
+}
+
+//--------------------------------------------------------------
 void ofxAVFVideoPlayer::setPosition(float pct)
 {
     [moviePlayer setPosition:pct];
@@ -392,12 +402,16 @@ void ofxAVFVideoPlayer::setFrame(int frame)
     [moviePlayer setCurrentFrame:frame];
 }
 
-void ofxAVFVideoPlayer::setVolume(float volume) {
-    moviePlayer.player.volume = volume;
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setVolume(float volume)
+{
+    [moviePlayer setVolume:volume];
 }
 
-void ofxAVFVideoPlayer::setBalance(float balance) {
-    
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setBalance(float balance)
+{
+
 }
 
 //--------------------------------------------------------------
