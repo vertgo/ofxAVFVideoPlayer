@@ -14,7 +14,9 @@
 #import "ofxAVFVideoRenderer.h"
 #endif
 
+#ifndef NEW_SCHOOL
 #define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
+#endif
 
 class ofxAVFVideoPlayer  : public ofBaseVideoPlayer {
 public:
@@ -117,10 +119,10 @@ protected:
     bool bInitialized;
     void exit(ofEventArgs& args);
     
-    // updateTexture() pulls texture data from the movie AVFoundation
-    // renderer into our internal ofTexture.
+#if NEW_SCHOOL
     void updateTexture();
     void reallocatePixels();
+#endif
     
     ofFbo fbo;
     ofTexture tex;

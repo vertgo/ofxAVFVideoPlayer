@@ -11,10 +11,11 @@
 
 @interface AVFVideoRenderer ()
 
-- (NSDictionary *)pixelBufferAttributes;
 - (void)playerItemDidReachEnd:(NSNotification *) notification;
-#if !NEW_SCHOOL
-- (void) render;
+#if NEW_SCHOOL
+- (NSDictionary *)pixelBufferAttributes;
+#else
+- (void)render;
 #endif
 
 @end
@@ -25,7 +26,10 @@
 @synthesize playerItemVideoOutput = _playerItemVideoOutput;
 @synthesize playerItem = _playerItem;
 
-//@synthesize playerItem, playerLayer, assetReader, layerRenderer;
+#if !NEW_SCHOOL
+@synthesize playerLayer = _playerLayer;
+@synthesize layerRenderer = _layerRenderer;
+#endif
 
 @synthesize useTexture = _useTexture;
 @synthesize useAlpha = _useAlpha;
@@ -52,9 +56,10 @@ int count = 0;
 {
     self = [super init];
     if (self) {
+#if NEW_SCHOOL
         _player = [[AVPlayer alloc] init];
-            
         _amplitudes = [[NSMutableData data] retain];
+#endif
         
         _bLoading = NO;
         _bLoaded = NO;
@@ -71,6 +76,7 @@ int count = 0;
     return self;
 }
 
+#if NEW_SCHOOL
 - (NSDictionary *)pixelBufferAttributes
 {
     // kCVPixelFormatType_32ARGB, kCVPixelFormatType_32BGRA, kCVPixelFormatType_422YpCbCr8
@@ -79,6 +85,7 @@ int count = 0;
              (NSString *)kCVPixelBufferPixelFormatTypeKey     : [NSNumber numberWithInt:kCVPixelFormatType_32ARGB]  //[NSNumber numberWithInt:kCVPixelFormatType_422YpCbCr8]
             };
 }
+#endif
 
 //--------------------------------------------------------------
 - (void)loadFile:(NSString *)filename
@@ -101,12 +108,14 @@ int count = 0;
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
     
+#if NEW_SCHOOL
     if (_amplitudes) {
         [_amplitudes setLength:0];
     }
     _numAmplitudes = 0;
+#endif
     
-    NSLog(@"Trying to load %@", filename);
+    NSLog(@"Loading %@", filename);
     
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
     NSString *tracksKey = @"tracks";
@@ -140,8 +149,9 @@ int count = 0;
                                                              name:AVPlayerItemDidPlayToEndTimeNotification
                                                            object:self.playerItem];
 
+#if NEW_SCHOOL
                 [self.player replaceCurrentItemWithPlayerItem:self.playerItem];
-                
+
                 // Create and attach video output. 10.8 Only!!!
                 _playerItemVideoOutput = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:[self pixelBufferAttributes]];
                 if (self.playerItemVideoOutput) {
@@ -160,27 +170,17 @@ int count = 0;
 //                        return;
                     }
                 }
+#else
+                self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
                 
+                self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
+                self.layerRenderer = [CARenderer rendererWithCGLContext:CGLGetCurrentContext() options:nil];
+                self.layerRenderer.layer = self.playerLayer;
                 
-                
-                
-//                self.outputDuration = CMTimeGetSeconds([[player currentItem] duration]);
-                
-//                [self.player play];
-
-                
-//                self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
-//                
-//                self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-//                
-//                self.layerRenderer = [CARenderer rendererWithCGLContext:CGLGetCurrentContext() options:nil];
-//                self.layerRenderer.layer = playerLayer;
-//                
-//                // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
-//                self.layerRenderer.bounds = CGRectMake(-videoSize.width/2, -videoSize.height/2, videoSize.width, videoSize.height);
-//                self.playerLayer.bounds = self.layerRenderer.bounds;
-
-
+                // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
+                self.layerRenderer.bounds = CGRectMake(_videoSize.width * -0.5, _videoSize.height * -0.5, _videoSize.width, _videoSize.height);
+                self.playerLayer.bounds = self.layerRenderer.bounds;
+#endif
 
 #if NEW_SCHOOL
                 NSArray *audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
@@ -296,15 +296,6 @@ int count = 0;
     else {
         [self stop];
         
-        // SK: Releasing the CARenderer is slow for some reason
-        //     It will freeze the main thread for a few dozen mS.
-        //     If you're swapping in and out videos a lot, the loadFile:
-        //     method should be re-written to just re-use and re-size
-        //     these layers/objects rather than releasing and reallocating
-        //     them every time a new file is needed.
-        
-//        if(self.layerRenderer) [self.layerRenderer release];
-        
         [[NSNotificationCenter defaultCenter] removeObserver:self];
         if (self.playerItem) {
             [self.playerItem removeObserver:self forKeyPath:@"status"];
@@ -317,6 +308,7 @@ int count = 0;
         [_playerItemVideoOutput release];
         _playerItemVideoOutput = nil;
         
+#if NEW_SCHOOL
         if (_textureCache != NULL) {
 			CVOpenGLTextureCacheRelease(_textureCache);
 			_textureCache = NULL;
@@ -332,6 +324,18 @@ int count = 0;
         
         if (_amplitudes) [_amplitudes release];
         _numAmplitudes = 0;
+#else
+        // SK: Releasing the CARenderer is slow for some reason
+        //     It will freeze the main thread for a few dozen mS.
+        //     If you're swapping in and out videos a lot, the loadFile:
+        //     method should be re-written to just re-use and re-size
+        //     these layers/objects rather than releasing and reallocating
+        //     them every time a new file is needed.
+        
+        if (self.layerRenderer) {
+            [self.layerRenderer release];
+        }
+#endif
         
         if (!_bDeallocWhenLoaded) [super dealloc];
     }
@@ -390,6 +394,7 @@ int count = 0;
 //--------------------------------------------------------------
 - (BOOL)update
 {
+#if NEW_SCHOOL
     // Check our video output for new frames.
     CMTime outputItemTime = [self.playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
     if ([self.playerItemVideoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
@@ -423,45 +428,52 @@ int count = 0;
     }
     
     return NO;
+#else
+    return YES;
+#endif
 }
 
-//- (void) render {
-//    // From https://qt.gitorious.org/qt/qtmultimedia/blobs/700b4cdf42335ad02ff308cddbfc37b8d49a1e71/src/plugins/avfoundation/mediaplayer/avfvideoframerenderer.mm
-//    
-//    glPushAttrib(GL_ENABLE_BIT);
-//    glDisable(GL_DEPTH_TEST);
-//    
-//    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-//    glClear(GL_COLOR_BUFFER_BIT);
-//    
-//    glViewport(0, 0, _videoSize.width, _videoSize.height);
-//    
-//    glMatrixMode(GL_PROJECTION);
-//    glPushMatrix();
-//    glLoadIdentity();
-//    
-//    glOrtho(0.0f, videoSize.width, videoSize.height, 0.0f, 0.0f, 1.0f);
-//    
-//    glMatrixMode(GL_MODELVIEW);
-//    glPushMatrix();
-//    glLoadIdentity();
-//    
-//    glTranslatef(videoSize.width/2,videoSize.height/2,0);
-//    
-//    [layerRenderer beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
-//    [layerRenderer addUpdateRect:layerRenderer.layer.bounds];
-//    [layerRenderer render];
-//    [layerRenderer endFrame];
-//    
-//    glMatrixMode(GL_MODELVIEW);
-//    glPopMatrix();
-//    glMatrixMode(GL_PROJECTION);
-//    glPopMatrix();
-//    
-//    glPopAttrib();
-//    
-//    glFinish(); //Rendering needs to be done before passing texture to video frame
-//}
+#if !NEW_SCHOOL
+//--------------------------------------------------------------
+- (void) render
+{
+    // From https://qt.gitorious.org/qt/qtmultimedia/blobs/700b4cdf42335ad02ff308cddbfc37b8d49a1e71/src/plugins/avfoundation/mediaplayer/avfvideoframerenderer.mm
+    
+    glPushAttrib(GL_ENABLE_BIT);
+    glDisable(GL_DEPTH_TEST);
+    
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glViewport(0, 0, _videoSize.width, _videoSize.height);
+    
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    glOrtho(0.0f, _videoSize.width, _videoSize.height, 0.0f, 0.0f, 1.0f);
+    
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    glTranslatef(_videoSize.width * 0.5, _videoSize.height * 0.5, 0);
+    
+    [self.layerRenderer beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
+    [self.layerRenderer addUpdateRect:self.layerRenderer.layer.bounds];
+    [self.layerRenderer render];
+    [self.layerRenderer endFrame];
+    
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    
+    glPopAttrib();
+    
+    glFinish(); //Rendering needs to be done before passing texture to video frame
+}
+#endif
 
 #pragma mark - Pixels and Texture
 
@@ -477,6 +489,7 @@ int count = 0;
     return _videoSize.height;
 }
 
+#if NEW_SCHOOL
 //--------------------------------------------------------------
 - (void)pixels:(unsigned char *)outbuf
 {
@@ -569,6 +582,7 @@ int count = 0;
 	GLenum target = [self textureTarget];
 	glDisable(target);
 }
+#endif
 
 #pragma mark - Playhead
 

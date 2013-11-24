@@ -14,7 +14,9 @@
 #import <AVFoundation/AVFoundation.h>
 #import <OpenGL/OpenGL.h>
 
+#ifndef NEW_SCHOOL
 #define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
+#endif
 
 @interface AVFVideoRenderer : NSObject
 {
@@ -22,17 +24,17 @@
     AVPlayerItemVideoOutput * _playerItemVideoOutput;
     AVPlayerItem * _playerItem;
     
-//    AVPlayerLayer *playerLayer;
-//    AVAssetReader *assetReader;
-    
+#if NEW_SCHOOL
     CVOpenGLTextureCacheRef _textureCache;
 	CVOpenGLTextureRef _latestTextureFrame;
 	CVPixelBufferRef _latestPixelFrame;
+#else
+    AVPlayerLayer * _playerLayer;
+    CARenderer * _layerRenderer;
+#endif
     
 	BOOL _useTexture;
 	BOOL _useAlpha;
-    
-    CARenderer *layerRenderer;
     
     CGSize _videoSize;
     
@@ -59,9 +61,6 @@
 @property (nonatomic, retain) AVPlayer *player;
 @property (nonatomic, retain) AVPlayerItemVideoOutput *playerItemVideoOutput;
 @property (nonatomic, retain) AVPlayerItem *playerItem;
-//@property (nonatomic, retain) AVPlayerLayer *playerLayer;
-//@property (nonatomic, retain) AVAssetReader *assetReader;
-//@property (nonatomic, retain) CARenderer *layerRenderer;
 
 @property (nonatomic, assign, readonly) double width;
 @property (nonatomic, assign, readonly) double height;
@@ -76,11 +75,16 @@
 @property (nonatomic, assign, readonly) BOOL isPlaying;
 
 @property (nonatomic, readonly) BOOL useAlpha;
-
 @property (nonatomic, readonly) BOOL useTexture;
+
+#if NEW_SCHOOL
 @property (nonatomic, readonly) BOOL textureAllocated;
 @property (nonatomic, readonly) GLuint textureID;
 @property (nonatomic, readonly) GLenum textureTarget;
+#else
+@property (nonatomic, retain) AVPlayerLayer *playerLayer;
+@property (nonatomic, retain) CARenderer *layerRenderer;
+#endif
 
 @property (nonatomic, assign, readonly) double frameRate;
 @property (nonatomic, assign, readonly) double duration;
@@ -102,8 +106,12 @@
 
 - (BOOL)update;
 
+#if NEW_SCHOOL
 - (void)bindTexture;
 - (void)unbindTexture;
 - (void)pixels:(unsigned char *)outbuf;
+#else
+- (void)render;
+#endif
 
 @end

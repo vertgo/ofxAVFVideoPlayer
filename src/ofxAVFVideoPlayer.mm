@@ -98,9 +98,12 @@ void ofxAVFVideoPlayer::update()
     
     if ([moviePlayer isLoaded]) {
         if (!bInitialized) {
-            // Create the FBO
+            // Create the FBO.
+#if NEW_SCHOOL
             reallocatePixels();
-//            fbo.allocate(moviePlayer.width, moviePlayer.height);
+#else
+            fbo.allocate(moviePlayer.width, moviePlayer.height);
+#endif
             bInitialized = true;
 
             if (scrubToTime != 0.0f) {
@@ -114,12 +117,15 @@ void ofxAVFVideoPlayer::update()
 			}
         }
         
-        // Render movie into FBO so we can get a texture
-
-//        fbo.begin();
-//        [moviePlayer render];
-//        fbo.end();
+#if NEW_SCHOOL
         bNewFrame = [moviePlayer update];
+#else
+        // Render movie into FBO so we can get a texture
+        fbo.begin();
+        [moviePlayer render];
+        fbo.end();
+        bNewFrame = true;
+#endif
         bHavePixelsChanged = bNewFrame;
     }
     else {
@@ -200,12 +206,23 @@ float * ofxAVFVideoPlayer::getAllAmplitudes()
 //--------------------------------------------------------------
 unsigned char * ofxAVFVideoPlayer::getPixels()
 {
+#if NEW_SCHOOL
     return getPixelsRef().getPixels();
+#else
+    if (!moviePlayer || ![moviePlayer isLoaded] || !bInitialized) return NULL;
+    
+    if (bHavePixelsChanged) {
+        fbo.readToPixels(pixels);
+        bHavePixelsChanged = false; // Don't read pixels until next update() is called
+    }
+    return pixels.getPixels();
+#endif
 }
 
 //--------------------------------------------------------------
 ofPixelsRef ofxAVFVideoPlayer::getPixelsRef()
 {
+#if NEW_SCHOOL
     if (isLoaded()) {
         // Don't get the pixels every frame if it hasn't updated
         if (bHavePixelsChanged) {
@@ -216,6 +233,9 @@ ofPixelsRef ofxAVFVideoPlayer::getPixelsRef()
     else {
         ofLogError("ofxAVFVideoPlayer::getPixelsRef()") << "Returning pixels that may be unallocated. Make sure to initialize the video player before calling getPixelsRef.";
     }
+#else
+    getPixels();
+#endif
     
 	return pixels;
 }
@@ -223,19 +243,30 @@ ofPixelsRef ofxAVFVideoPlayer::getPixelsRef()
 //--------------------------------------------------------------
 ofTexture* ofxAVFVideoPlayer::getTexture()
 {
+#if NEW_SCHOOL
     if (moviePlayer.textureAllocated) {
 		updateTexture();
         return &tex;
 	}
 
     return NULL;
+#else
+    if (!moviePlayer || ![moviePlayer isLoaded] || !bInitialized) return NULL;
+    
+    return &fbo.getTextureReference();
+#endif
 }
 
 //--------------------------------------------------------------
 ofTexture& ofxAVFVideoPlayer::getTextureReference()
 {
+#if NEW_SCHOOL
     getTexture();
     return tex;
+#else
+    if (!moviePlayer || ![moviePlayer isLoaded] || !bInitialized) return;
+    return fbo.getTextureReference();
+#endif
 }
 
 //--------------------------------------------------------------
@@ -390,7 +421,11 @@ void ofxAVFVideoPlayer::draw(float x, float y)
 {
     if (!bInitialized) return;
     
+#if NEW_SCHOOL
     draw(x, y, getWidth(), getHeight());
+#else
+    fbo.draw(x, y);
+#endif
 }
 
 //--------------------------------------------------------------
@@ -398,9 +433,12 @@ void ofxAVFVideoPlayer::draw(float x, float y, float w, float h)
 {
     if (!bInitialized) return;
     
+#if NEW_SCHOOL
     updateTexture();
 	tex.draw(x, y, w, h);
-//    fbo.draw(x, y, w, h);
+#else
+    fbo.draw(x, y, w, h);
+#endif
 }
 
 //--------------------------------------------------------------
@@ -427,6 +465,7 @@ void ofxAVFVideoPlayer::previousFrame() {
     
 }
 
+#if NEW_SCHOOL
 //--------------------------------------------------------------
 void ofxAVFVideoPlayer::updateTexture()
 {
@@ -454,3 +493,4 @@ void ofxAVFVideoPlayer::reallocatePixels()
         pixels.allocate(getWidth(), getHeight(), OF_IMAGE_COLOR);
     }
 }
+#endif
