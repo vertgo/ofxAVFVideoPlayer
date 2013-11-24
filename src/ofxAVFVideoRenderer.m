@@ -72,6 +72,9 @@ int count = 0;
         _bMovieDone = NO;
         _bDeallocWhenLoaded = NO;
         
+        _useTexture = YES;
+        _useAlpha = NO;
+        
         _frameRate = 0.0;
         _playbackRate = 1.0;
         _bLoops = false;
@@ -118,8 +121,8 @@ int count = 0;
     _frameRate = 0.0;
     _playbackRate = 1.0;
     
-    _useTexture = true;
-    _useAlpha = false;
+//    _useTexture = YES;
+//    _useAlpha = NO;
     
 #if NEW_SCHOOL
     if (_amplitudes) {

@@ -45,7 +45,10 @@ bool ofxAVFVideoPlayer::loadMovie(string path)
     bInitialized = false;
 	
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    
     moviePlayer = [[AVFVideoRenderer alloc] init];
+    [moviePlayer setUseAlpha:(pixelFormat == OF_PIXELS_RGBA)];
+    [moviePlayer setUseTexture:YES];
 
 	if (Poco::icompare(path.substr(0, 7), "http://")  == 0 ||
         Poco::icompare(path.substr(0, 8), "https://") == 0 ||
@@ -419,12 +422,29 @@ void ofxAVFVideoPlayer::setSpeed(float speed)
     [moviePlayer setPlaybackRate:speed];
 }
 
-bool ofxAVFVideoPlayer::setPixelFormat(ofPixelFormat pixelFormat) {
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::setPixelFormat(ofPixelFormat newPixelFormat)
+{
+    if (newPixelFormat != OF_PIXELS_RGB && newPixelFormat != OF_PIXELS_RGBA) {
+        ofLogWarning("ofxAVFVideoPlayer::setPixelFormat") << "Pixel format " << newPixelFormat << " is not supported.";
+        return false;
+    }
     
+    if (newPixelFormat != pixelFormat) {
+        pixelFormat = newPixelFormat;
+        // If we already have a movie loaded we need to reload
+        // the movie with the new settings correctly allocated.
+        if (isLoaded()) {
+            loadMovie(moviePath);
+        }
+    }
+	return true;
 }
 
-ofPixelFormat ofxAVFVideoPlayer::getPixelFormat() {
-    
+//--------------------------------------------------------------
+ofPixelFormat ofxAVFVideoPlayer::getPixelFormat()
+{
+    return pixelFormat;
 }
 
 //--------------------------------------------------------------

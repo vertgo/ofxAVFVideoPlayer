@@ -34,7 +34,7 @@
 #endif
     
 	BOOL _useTexture;
-	BOOL _useAlpha;
+    BOOL _useAlpha;
     
     CGSize _videoSize;
     
@@ -75,8 +75,8 @@
 @property (nonatomic, assign, readonly, getter = isMovieDone) BOOL bMovieDone;
 @property (nonatomic, assign, readonly) BOOL isPlaying;
 
-@property (nonatomic, readonly) BOOL useAlpha;
-@property (nonatomic, readonly) BOOL useTexture;
+@property (nonatomic, assign) BOOL useAlpha;
+@property (nonatomic, assign) BOOL useTexture;
 
 #if NEW_SCHOOL
 @property (nonatomic, readonly) BOOL textureAllocated;
