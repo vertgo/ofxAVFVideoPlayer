@@ -101,7 +101,9 @@
 @property (nonatomic, assign, readonly) int numAmplitudes;
 #endif
 
-- (void)loadFile:(NSString *)filename;
+- (void)loadFilePath:(NSString *)filePath;
+- (void)loadURLPath:(NSString *)urlPath;
+- (void)loadURL:(NSURL *)url;
 
 - (void)play;
 - (void)stop;

@@ -92,7 +92,19 @@ int count = 0;
 #endif
 
 //--------------------------------------------------------------
-- (void)loadFile:(NSString *)filename
+- (void)loadFilePath:(NSString *)filePath
+{
+    [self loadURL:[NSURL fileURLWithPath:[filePath stringByStandardizingPath]]];
+}
+
+//--------------------------------------------------------------
+- (void)loadURLPath:(NSString *)urlPath
+{
+    [self loadURL:[NSURL URLWithString:urlPath]];
+}
+
+//--------------------------------------------------------------
+- (void)loadURL:(NSURL *)url
 {
     _bLoading = YES;
     _bLoaded = NO;
@@ -109,19 +121,16 @@ int count = 0;
     _useTexture = true;
     _useAlpha = false;
     
-    //NSURL *fileURL = [NSURL URLWithString:filename];
-    NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
-    
 #if NEW_SCHOOL
     if (_amplitudes) {
         [_amplitudes setLength:0];
     }
     _numAmplitudes = 0;
 #endif
+        
+    NSLog(@"Loading %@", [url absoluteString]);
     
-    NSLog(@"Loading %@", filename);
-    
-    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:nil];
     NSString *tracksKey = @"tracks";
     
     [asset loadValuesAsynchronouslyForKeys:@[tracksKey] completionHandler: ^{
@@ -187,8 +196,9 @@ int count = 0;
 #endif
 
 #if NEW_SCHOOL
+                // Only monitor audio if the file is local and has audio tracks.
                 NSArray *audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
-                if ([audioTracks count] > 0) {
+                if ([url isFileURL] && [audioTracks count] > 0) {
                     AVAssetTrack *audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];
 
                     NSError *error = nil;

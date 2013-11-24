@@ -46,18 +46,16 @@ bool ofxAVFVideoPlayer::loadMovie(string path)
 	
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     moviePlayer = [[AVFVideoRenderer alloc] init];
-    bool isURL = false;
-	
-    if (Poco::icompare(path.substr(0,7), "http://")  == 0 ||
-        Poco::icompare(path.substr(0,8), "https://") == 0 ||
-        Poco::icompare(path.substr(0,7), "rtsp://")  == 0) {
-        isURL = true;
+
+	if (Poco::icompare(path.substr(0, 7), "http://")  == 0 ||
+        Poco::icompare(path.substr(0, 8), "https://") == 0 ||
+        Poco::icompare(path.substr(0, 7), "rtsp://")  == 0) {
+        [moviePlayer loadURLPath:[NSString stringWithUTF8String:path.c_str()]];
     }
     else {
         path = ofToDataPath(path, false);
+        [moviePlayer loadFilePath:[NSString stringWithUTF8String:path.c_str()]];
     }
-    
-    [moviePlayer loadFile:[NSString stringWithUTF8String:path.c_str()]];
     
     bShouldPlay = false;
 	
