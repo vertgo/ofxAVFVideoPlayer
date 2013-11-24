@@ -571,9 +571,7 @@ int count = 0;
 //--------------------------------------------------------------
 - (GLuint)textureID
 {
-	@synchronized(self) {
-		return CVOpenGLTextureGetName(_latestTextureFrame);
-	}
+	return CVOpenGLTextureGetName(_latestTextureFrame);
 }
 
 //--------------------------------------------------------------

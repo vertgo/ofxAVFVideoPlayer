@@ -35,10 +35,17 @@ void testApp::draw()
     ofRect(0, ofGetHeight(), ofGetWidth(), -100);
     float playheadX = video.getPosition() * ofGetWidth();
     ofLine(playheadX, ofGetHeight() - 100, playheadX, ofGetHeight());
-    ofDrawBitmapString(ofToString(video.getCurrentTime()) + " / " + ofToString(video.getDuration()), playheadX + 10, ofGetHeight() - 80);
-    ofDrawBitmapString(ofToString(video.getCurrentFrame()) + " / " + ofToString(video.getTotalNumFrames()), playheadX + 10, ofGetHeight() - 10);
+    ofDrawBitmapStringHighlight(ofToString(video.getCurrentTime()) + " / " + ofToString(video.getDuration()), playheadX + 10, ofGetHeight() - 80);
+    ofDrawBitmapStringHighlight(ofToString(video.getCurrentFrame()) + " / " + ofToString(video.getTotalNumFrames()), playheadX + 10, ofGetHeight() - 10);
     
-    ofDrawBitmapString("Rate: " + ofToString(video.getSpeed()), 10, 20);
+    ofDrawBitmapStringHighlight("Rate: " + ofToString(video.getSpeed(), 2) + "\n" +
+                                "Time: " + ofToString(video.getCurrentTime(), 3) + " / " + ofToString(video.getDuration(), 3) + "\n" +
+                                "Frames: " + ofToString(video.getCurrentFrame()) + " / " + ofToString(video.getTotalNumFrames()) + "\n" +
+                                "Position: " + ofToString(video.getPosition() * 100, 1) + "%" + "\n"
+                                "[a]/[s]: Play / Stop \n" +
+                                "[space]: Pause \n" +
+                                "[up]/[down]: Adjust Rate",
+                                10, 20);
 }
 
 //--------------------------------------------------------------

@@ -42,7 +42,9 @@ ofxAVFVideoPlayer::~ofxAVFVideoPlayer()
 //--------------------------------------------------------------
 bool ofxAVFVideoPlayer::loadMovie(string path)
 {
-    bInitialized = false;
+    if (bInitialized) {
+        close();
+    }
 	
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     
@@ -484,15 +486,21 @@ float ofxAVFVideoPlayer::getHeight()
     return moviePlayer.height;
 }
 
-void ofxAVFVideoPlayer::firstFrame() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::firstFrame()
+{
     
 }
 
-void ofxAVFVideoPlayer::nextFrame() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::nextFrame()
+{
     
 }
 
-void ofxAVFVideoPlayer::previousFrame() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::previousFrame()
+{
     
 }
 

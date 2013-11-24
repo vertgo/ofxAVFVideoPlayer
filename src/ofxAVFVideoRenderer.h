@@ -79,9 +79,9 @@
 @property (nonatomic, assign) BOOL useTexture;
 
 #if NEW_SCHOOL
-@property (nonatomic, readonly) BOOL textureAllocated;
-@property (nonatomic, readonly) GLuint textureID;
-@property (nonatomic, readonly) GLenum textureTarget;
+@property (nonatomic, assign, readonly) BOOL textureAllocated;
+@property (nonatomic, assign, readonly) GLuint textureID;
+@property (nonatomic, assign, readonly) GLenum textureTarget;
 #else
 @property (nonatomic, retain) AVPlayerLayer *playerLayer;
 @property (nonatomic, retain) CARenderer *layerRenderer;
