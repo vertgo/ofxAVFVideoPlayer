@@ -30,6 +30,7 @@ public:
     void                update();
     void                play();
     void                stop();
+    
 #if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
     float               getAmplitude(int channel = 0);
     float               getAmplitudeAt(float pos, int channel = 0);
@@ -45,34 +46,42 @@ public:
     // Returns openFrameworks compatible RGBA pixels.
     // Be aware of your current render mode.
     
-    unsigned char * getPixels();
-    ofPixelsRef     getPixelsRef();
+    unsigned char *     getPixels();
+    ofPixelsRef         getPixelsRef();
     
     // Returns openFrameworks compatible ofTexture pointer.
     // if decodeMode == OF_QTKIT_DECODE_PIXELS_ONLY,
     // the returned pointer will be NULL.
-    ofTexture * getTexture();
-    ofTexture& getTextureReference();
+    ofTexture *         getTexture();
+    ofTexture&          getTextureReference();
+    
+    bool                isLoading();
+    bool                isLoaded();
+    bool                isAudioLoaded();
+    bool                errorLoading();
+    
+    bool                isPlaying();
+    bool                getIsMovieDone();
     
     float               getPosition();
-    float               getPositionInSeconds();
+    float               getCurrentTime();
+    int                 getCurrentFrame();
+    float               getDuration();
+    int                 getTotalNumFrames();
+    bool                isPaused();
     float               getSpeed();
     ofLoopType          getLoopState();
-    float               getDuration();
-    bool                getIsMovieDone();
-    int                 getTotalNumFrames();
-    int                 getCurrentFrame();
     
-    void                setPaused(bool bPaused);
     void                setPosition(float pct);
-	void                setPositionInSeconds(float seconds);
+	void                setTime(float seconds);
+    void                setFrame(int frame); // frame 0 = first frame...
     void                setVolume(float volume);
     void                setBalance(float balance);
-    void                setLoopState(ofLoopType state);
+    void                setPaused(bool bPaused);
     void                setSpeed(float speed);
-    void                setFrame(int frame); // frame 0 = first frame...
+    void                setLoopState(ofLoopType state);
     
-    // ofQTKitPlayer only supports OF_PIXELS_RGB and OF_PIXELS_RGBA.
+    // ofxAVFVideoPlayer only supports OF_PIXELS_RGB and OF_PIXELS_RGBA.
     bool                setPixelFormat(ofPixelFormat pixelFormat);
     ofPixelFormat       getPixelFormat();
     
@@ -81,13 +90,6 @@ public:
     
     float               getWidth();
     float               getHeight();
-    
-    bool                isPaused();
-    bool                isLoaded();
-    bool                isLoading();
-    bool                isPlaying();
-    bool                errorLoading();
-    bool                isAudioLoaded();    
     
     void                firstFrame();
     void                nextFrame();
@@ -119,7 +121,6 @@ protected:
     
     ofFbo fbo;
     ofTexture tex;
-    
     ofPixels pixels;
     ofPixelFormat pixelFormat;
     

@@ -9,7 +9,9 @@
 #include "ofxAVFVideoPlayer.h"
 #include "Poco/String.h"
 
-ofxAVFVideoPlayer::ofxAVFVideoPlayer() {
+//--------------------------------------------------------------
+ofxAVFVideoPlayer::ofxAVFVideoPlayer()
+{
     moviePlayer = NULL;
 	bNewFrame = false;
     bPaused = true;
@@ -23,18 +25,23 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer() {
     currentLoopState = OF_LOOP_NORMAL;
 	
 	ofAddListener(ofEvents().exit, this, &ofxAVFVideoPlayer::exit);
-    
 }
 
-void ofxAVFVideoPlayer::exit(ofEventArgs& args){
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::exit(ofEventArgs& args)
+{
 	close();
 }
 
-ofxAVFVideoPlayer::~ofxAVFVideoPlayer() {
+//--------------------------------------------------------------
+ofxAVFVideoPlayer::~ofxAVFVideoPlayer()
+{
 	close();
 }
 
-bool ofxAVFVideoPlayer::loadMovie(string path) {
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::loadMovie(string path)
+{
     bInitialized = false;
 	
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -59,41 +66,52 @@ bool ofxAVFVideoPlayer::loadMovie(string path) {
     return true;
 }
 
-void ofxAVFVideoPlayer::closeMovie() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::closeMovie()
+{
     close();
 }
 
-void ofxAVFVideoPlayer::close() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::close()
+{
     pixels.clear();
-    if(moviePlayer){
+    
+    if (moviePlayer) {
         [moviePlayer release];
         moviePlayer = NULL;
     }
+    
     bInitialized = false;
 }
 
-void ofxAVFVideoPlayer::idleMovie() {
-    
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::idleMovie()
+{
+    update();
 }
 
-void ofxAVFVideoPlayer::update() {
-
-    if(!moviePlayer) return;
-    if([moviePlayer isReady]) {
-        if(!bInitialized) {
-
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::update()
+{
+    if (!moviePlayer) return;
+    
+    if ([moviePlayer isLoaded]) {
+        if (!bInitialized) {
             // Create the FBO
-            fbo.allocate([moviePlayer getVideoSize].width, [moviePlayer getVideoSize].height);
+            reallocatePixels();
+//            fbo.allocate(moviePlayer.width, moviePlayer.height);
             bInitialized = true;
-			if(scrubToTime != 0.0f){
-				setPositionInSeconds(scrubToTime);
-				scrubToTime = false;
+
+            if (scrubToTime != 0.0f) {
+				setTime(scrubToTime);
+				scrubToTime = 0.0f;
 			}
-			if(bShouldPlay){
+            
+			if (bShouldPlay){
 				play();
 				bShouldPlay = false;
 			}
-
         }
         
         // Render movie into FBO so we can get a texture
@@ -101,31 +119,36 @@ void ofxAVFVideoPlayer::update() {
 //        fbo.begin();
 //        [moviePlayer render];
 //        fbo.end();
-        [moviePlayer update];
-        
-        bHavePixelsChanged = true;
+        bNewFrame = [moviePlayer update];
+        bHavePixelsChanged = bNewFrame;
     }
     else {
-        ofLogNotice("Movie player not ready.");
+        ofLogNotice("ofxAVFVideoPlayer::update()") << "Movie player not ready";
     }
 }
 
-void ofxAVFVideoPlayer::play() {
-	if(bInitialized){
-		cout << "initialized and playing at time " << getPositionInSeconds() << endl;
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::play()
+{
+	if (bInitialized) {
+        ofLogVerbose("ofxAVFVideoPlayer::play()") << "Initialized and playing at time " << getCurrentTime();
 		[moviePlayer play];
 	}
-	else{
+	else {
 		bShouldPlay = true;
 	}
 }
 
-void ofxAVFVideoPlayer::stop() {
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::stop()
+{
     [moviePlayer stop];
 }
 
-bool ofxAVFVideoPlayer::isFrameNew() {
-    return true;
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isFrameNew()
+{
+    return bNewFrame;
 }
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
@@ -137,7 +160,7 @@ float ofxAVFVideoPlayer::getAmplitudeAt(float pos, int channel) {
     pos = ofClamp(pos, 0, 1);
     channel = ofClamp(channel, 0, 1);
     
-    if (!moviePlayer || ![moviePlayer isAudioReady] || [moviePlayer numAmplitudes] == 0 || !bInitialized) {
+    if (!moviePlayer || ![moviePlayer isAudioLoaded] || [moviePlayer numAmplitudes] == 0 || !bInitialized) {
         return 0;
     }
     
@@ -166,28 +189,32 @@ float * ofxAVFVideoPlayer::getAllAmplitudes() {
 }
 #endif
 
-unsigned char* ofxAVFVideoPlayer::getPixels() {
-    if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
-        
-    if(bHavePixelsChanged) {
-        fbo.readToPixels(pixels);
-        bHavePixelsChanged = false; // Don't read pixels until next update() is called
-    }
-    
-    return pixels.getPixels();
+//--------------------------------------------------------------
+unsigned char * ofxAVFVideoPlayer::getPixels()
+{
+    return getPixelsRef().getPixels();
 }
 
-ofPixelsRef ofxAVFVideoPlayer::getPixelsRef() {
-    getPixels();
-    return pixels;
+//--------------------------------------------------------------
+ofPixelsRef ofxAVFVideoPlayer::getPixelsRef()
+{
+    if (isLoaded()) {
+        // Don't get the pixels every frame if it hasn't updated
+        if (bHavePixelsChanged) {
+            [moviePlayer pixels:pixels.getPixels()];
+            bHavePixelsChanged = false;
+        }
+	}
+    else {
+        ofLogError("ofxAVFVideoPlayer::getPixelsRef()") << "Returning pixels that may be unallocated. Make sure to initialize the video player before calling getPixelsRef.";
+    }
+    
+	return pixels;
 }
 
 //--------------------------------------------------------------
 ofTexture* ofxAVFVideoPlayer::getTexture()
 {
-//    if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return NULL;
-//    
-//    return &fbo.getTextureReference();
     if (moviePlayer.textureAllocated) {
 		updateTexture();
         return &tex;
@@ -196,22 +223,93 @@ ofTexture* ofxAVFVideoPlayer::getTexture()
     return NULL;
 }
 
-ofTexture& ofxAVFVideoPlayer::getTextureReference() {
-    if(!moviePlayer || ![moviePlayer isReady] || !bInitialized) return;
+//--------------------------------------------------------------
+ofTexture& ofxAVFVideoPlayer::getTextureReference()
+{
+    getTexture();
+    return tex;
+}
+
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isLoading()
+{
+    return moviePlayer && [moviePlayer isLoading];
+}
+
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isLoaded()
+{
+    return bInitialized;
+}
+
+bool ofxAVFVideoPlayer::isAudioLoaded() {
+    return moviePlayer && [moviePlayer isAudioLoaded];
+}
+
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::errorLoading()
+{
+    if (!moviePlayer) return false;
     
-    return fbo.getTextureReference();
+    // Error if movie player is not loading and is not ready.
+    return ![moviePlayer isLoading] && ![moviePlayer isLoaded];
 }
 
-float ofxAVFVideoPlayer::getPosition() {
-    // Return a fraction between 0 and 1 representing the position of the playhead
-    return CMTimeGetSeconds([[moviePlayer player] currentTime]) / CMTimeGetSeconds([moviePlayer getVideoDuration]);
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isPlaying()
+{
+    return moviePlayer && [moviePlayer isPlaying];
 }
 
-float ofxAVFVideoPlayer::getPositionInSeconds() {
-    return CMTimeGetSeconds([[moviePlayer player] currentTime]);
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::getIsMovieDone()
+{
+    return moviePlayer.isMovieDone;
 }
 
-float ofxAVFVideoPlayer::getSpeed() {
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getPosition()
+{
+    return moviePlayer.position;
+}
+
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getCurrentTime()
+{
+    return moviePlayer.currentTime;
+}
+
+//--------------------------------------------------------------
+int ofxAVFVideoPlayer::getCurrentFrame()
+{
+    return moviePlayer.currentFrame;
+}
+
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getDuration()
+{
+    return moviePlayer.duration;
+}
+
+//--------------------------------------------------------------
+int ofxAVFVideoPlayer::getTotalNumFrames()
+{
+    return moviePlayer.totalFrames;
+}
+
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isPaused()
+{
+    return moviePlayer && [moviePlayer isPaused];
+}
+
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getSpeed()
+{
+    if (moviePlayer) {
+        return moviePlayer.playbackRate;
+    }
+    
     return 0;
 }
 
@@ -219,38 +317,28 @@ ofLoopType ofxAVFVideoPlayer::getLoopState() {
 	return OF_LOOP_NONE;
 }
 
-float ofxAVFVideoPlayer::getDuration() {
-    return CMTimeGetSeconds([moviePlayer getVideoDuration]);
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setPosition(float pct)
+{
+    [moviePlayer setPosition:pct];
 }
 
-bool ofxAVFVideoPlayer::getIsMovieDone() {
-    return false;
-}
-
-int ofxAVFVideoPlayer::getTotalNumFrames() {
-    return 0;
-}
-
-int ofxAVFVideoPlayer::getCurrentFrame() {
-    return 0;
-}
-
-void ofxAVFVideoPlayer::setPaused(bool bPaused) {
-    
-}
-
-void ofxAVFVideoPlayer::setPositionInSeconds(float position) {
-	if(![moviePlayer isReady]){
-		cout << "video player not ready, declaring to scrub to time " << scrubToTime << endl;
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setTime(float position)
+{
+	if (![moviePlayer isLoaded]) {
+		ofLogNotice("ofxAVFVideoPlayer::setCurrentTime()") << "Video player not ready, declaring to scrub to time " << scrubToTime;
 		scrubToTime = position;
 	}
-	else{
-		[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(position, [moviePlayer getVideoDuration].timescale)];
+	else {
+        [moviePlayer setCurrentTime:position];
 	}
 }
 
-void ofxAVFVideoPlayer::setPosition(float pct) {
-	[[moviePlayer player] seekToTime:CMTimeMakeWithSeconds(getDuration() * pct, [moviePlayer getVideoDuration].timescale)];
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setFrame(int frame)
+{
+    [moviePlayer setCurrentFrame:frame];
 }
 
 void ofxAVFVideoPlayer::setVolume(float volume) {
@@ -261,16 +349,20 @@ void ofxAVFVideoPlayer::setBalance(float balance) {
     
 }
 
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setPaused(bool bPaused)
+{
+    [moviePlayer setPaused:bPaused];
+}
+
 void ofxAVFVideoPlayer::setLoopState(ofLoopType state) {
     
 }
 
-void ofxAVFVideoPlayer::setSpeed(float speed) {
-    
-}
-
-void ofxAVFVideoPlayer::setFrame(int frame) {
-    
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setSpeed(float speed)
+{
+    [moviePlayer setPlaybackRate:speed];
 }
 
 bool ofxAVFVideoPlayer::setPixelFormat(ofPixelFormat pixelFormat) {
@@ -299,39 +391,16 @@ void ofxAVFVideoPlayer::draw(float x, float y, float w, float h)
 //    fbo.draw(x, y, w, h);
 }
 
-float ofxAVFVideoPlayer::getWidth() {
-    return [moviePlayer getVideoSize].width;
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getWidth()
+{
+    return moviePlayer.width;
 }
 
-float ofxAVFVideoPlayer::getHeight() {
-    return [moviePlayer getVideoSize].height;
-}
-
-bool ofxAVFVideoPlayer::isPaused() {
-    return [moviePlayer player].rate == 0;
-}
-
-bool ofxAVFVideoPlayer::isLoading() {
-    return [moviePlayer isLoading];
-}
-
-bool ofxAVFVideoPlayer::isLoaded() {
-    return bInitialized;
-}
-
-bool ofxAVFVideoPlayer::errorLoading() {
-    if(!moviePlayer) return false;
-    
-    // Error if movie player is not loading and is not ready
-    return (![moviePlayer isLoading] && ![moviePlayer isReady]);
-}
-
-bool ofxAVFVideoPlayer::isAudioLoaded() {
-    return (moviePlayer && [moviePlayer isAudioReady]);
-}
-
-bool ofxAVFVideoPlayer::isPlaying() {
-    return (moviePlayer && [moviePlayer isPlaying]);
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getHeight()
+{
+    return moviePlayer.height;
 }
 
 void ofxAVFVideoPlayer::firstFrame() {
@@ -363,6 +432,13 @@ void ofxAVFVideoPlayer::updateTexture()
 	}
 }
 
-void ofxAVFVideoPlayer::reallocatePixels() {
-    
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::reallocatePixels()
+{
+    if (pixelFormat == OF_PIXELS_RGBA) {
+        pixels.allocate(getWidth(), getHeight(), OF_IMAGE_COLOR_ALPHA);
+    }
+    else {
+        pixels.allocate(getWidth(), getHeight(), OF_IMAGE_COLOR);
+    }
 }

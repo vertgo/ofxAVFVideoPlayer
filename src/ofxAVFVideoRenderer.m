@@ -7,6 +7,7 @@
 //
 
 #import "ofxAVFVideoRenderer.h"
+#import <Accelerate/Accelerate.h>
 
 @interface AVFVideoRenderer ()
 
@@ -22,12 +23,17 @@
 
 //@synthesize playerItem, playerLayer, assetReader, layerRenderer;
 
-@synthesize useTexture;
+@synthesize useTexture = _useTexture;
+@synthesize useAlpha = _useAlpha;
 
-@synthesize outputPlayheadPosition;
-@synthesize outputDuration;
-@synthesize outputMovieTime;
-@synthesize outputMovieDidEnd;
+@synthesize bLoading = _bLoading;
+@synthesize bLoaded = _bLoaded;
+@synthesize bAudioLoaded = _bAudioLoaded;
+@synthesize bPaused = _bPaused;
+@synthesize bMovieDone = _bMovieDone;
+
+@synthesize frameRate = _frameRate;
+@synthesize playbackRate = _playbackRate;
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
 @synthesize amplitudes, numAmplitudes;
@@ -42,6 +48,16 @@ int count = 0;
         _player = [[AVPlayer alloc] init];
             
         amplitudes = [[NSMutableData data] retain];
+        
+        _bLoading = NO;
+        _bLoaded = NO;
+        _bAudioLoaded = NO;
+        _bPaused = NO;
+        _bMovieDone = NO;
+        _bDeallocWhenLoaded = NO;
+        
+        _frameRate = 0.0;
+        _playbackRate = 1.0;
     }
     return self;
 }
@@ -55,14 +71,21 @@ int count = 0;
             };
 }
 
-- (void) loadFile:(NSString *)filename
+//--------------------------------------------------------------
+- (void)loadFile:(NSString *)filename
 {
-    loading = YES;
-    ready = NO;
-    audioReady = NO;
-    deallocWhenReady = NO;
+    _bLoading = YES;
+    _bLoaded = NO;
+    _bAudioLoaded = NO;
+    _bPaused = NO;
+    _bMovieDone = NO;
+    _bDeallocWhenLoaded = NO;
     
-    useTexture = true;
+    _frameRate = 0.0;
+    _playbackRate = 1.0;
+    
+    _useTexture = true;
+    _useAlpha = false;
     
     //NSURL *fileURL = [NSURL URLWithString:filename];
     NSURL *fileURL = [NSURL fileURLWithPath:[filename stringByStandardizingPath]];
@@ -78,7 +101,7 @@ int count = 0;
     NSString *tracksKey = @"tracks";
     
     [asset loadValuesAsynchronouslyForKeys:@[tracksKey] completionHandler: ^{
-        static const NSString *ItemStatusContext;
+        static const NSString *kItemStatusContext;
         // Perform the following back on the main thread
         dispatch_async(dispatch_get_main_queue(), ^{
             NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -87,15 +110,17 @@ int count = 0;
             AVKeyValueStatus status = [asset statusOfValueForKey:tracksKey error:&error];
             
             if (status == AVKeyValueStatusLoaded) {
-                // Asset metadata has been loaded. Set up the player
+                // Asset metadata has been loaded, set up the player.
                 
-                // Extract the video track to get the video size
+                // Extract the video track to get the video size and other properties.
                 AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
-                videoSize = [videoTrack naturalSize];
-                videoDuration = asset.duration;
+                _videoSize = [videoTrack naturalSize];
+                _currentTime = kCMTimeZero;
+                _duration = asset.duration;
+                _frameRate = [videoTrack nominalFrameRate];
                 
                 self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
-                [self.playerItem addObserver:self forKeyPath:@"status" options:0 context:&ItemStatusContext];
+                [self.playerItem addObserver:self forKeyPath:@"status" options:0 context:&kItemStatusContext];
                 
                 // Notify this object when the player reaches the end
                 // This allows us to loop the video
@@ -110,8 +135,6 @@ int count = 0;
                 _playerItemVideoOutput = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:[self pixelBufferAttributes]];
                 if (self.playerItemVideoOutput) {
                     self.playerItemVideoOutput.suppressesPlayerRendering = YES;
-                    //            [playerItemVideoOutput setDelegate:self queue:dispatch_get_main_queue()];
-                    //            [playerItemVideoOutput requestNotificationOfMediaDataChangeWithAdvanceInterval:ADVANCE_INTERVAL_IN_SECONDS];
                 }
                 [[self.player currentItem] addOutput:self.playerItemVideoOutput];
                 
@@ -237,26 +260,28 @@ int count = 0;
 //                    }
 //                }
 //#endif
-                ready = YES;
-                loading = NO;
+                _bLoading = NO;
+                _bLoaded = YES;
             }
             else {
-                loading = NO;
-                ready = NO;
+                _bLoading = NO;
+                _bLoaded = NO;
                 NSLog(@"There was an error loading the file: %@", error);
             }
             
-            // If dealloc is called immediately after loadFile, we have to defer releasing properties
-            if(deallocWhenReady) [self dealloc];
+            // If dealloc is called immediately after loadFile, we have to defer releasing properties.
+            if (_bDeallocWhenLoaded) [self dealloc];
+            
             [pool release];
         });
     }];
 }
 
-- (void) dealloc
+//--------------------------------------------------------------
+- (void)dealloc
 {
-    if (loading) {
-        deallocWhenReady = YES;
+    if (_bLoading) {
+        _bDeallocWhenLoaded = YES;
     }
     else {
         [self stop];
@@ -271,18 +296,13 @@ int count = 0;
 //        if(self.layerRenderer) [self.layerRenderer release];
         
         [[NSNotificationCenter defaultCenter] removeObserver:self];
-        if(self.playerItem) [self.playerItem removeObserver:self forKeyPath:@"status"];
-        
-//        if(self.player) [self.player release];
-//        if(self.playerItem) [self.playerItem release];
-//        if(self.playerLayer) [self.playerLayer release];
-        
-        [_player release];
+        if (self.playerItem) {
+            [self.playerItem removeObserver:self forKeyPath:@"status"];
+            [self.playerItem release];
+        }
+                
+//        [_player release];  // No need
         _player = nil;
-        
-//        dispatch_sync(playerVideoOutputQueue, ^{
-//            [playerItemVideoOutput setDelegate:nil queue:NULL];
-//        });
         
         [_playerItemVideoOutput release];
         _playerItemVideoOutput = nil;
@@ -303,41 +323,62 @@ int count = 0;
         if (amplitudes) [amplitudes release];
         numAmplitudes = 0;
         
-        if (!deallocWhenReady) [super dealloc];
+        if (!_bDeallocWhenLoaded) [super dealloc];
     }
 }
 
-- (BOOL) isLoading { return loading; }
-- (BOOL) isReady { return ready; }
-- (BOOL) isAudioReady { return audioReady; }
-- (BOOL) isPlaying { return self.player.rate != 0; }
-- (CGSize) getVideoSize {
-    return videoSize;
-}
-
-- (CMTime) getVideoDuration {
-    return videoDuration;
-}
-
-- (void) play {
+//--------------------------------------------------------------
+- (void)play
+{
     [self.player play];
+    [self.player setRate:_playbackRate];
 }
 
-- (void) stop {
+//--------------------------------------------------------------
+- (void)stop
+{
+    // Pause and rewind.
     [self.player pause];
+    [self.player seekToTime:kCMTimeZero];
+}
+
+//--------------------------------------------------------------
+- (void)setPaused:(BOOL)bPaused
+{
+    _bPaused = bPaused;
+    if (_bPaused) {
+        [self.player pause];
+    }
+    else {
+        [self.player play];
+        [self.player setRate:_playbackRate];
+    }
+}
+
+//--------------------------------------------------------------
+- (BOOL)isPlaying
+{
+    if (![self isLoaded])
+        return false;
+    
+	return ![self isMovieDone] && ![self isPaused];
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
 }
 
-- (void) playerItemDidReachEnd:(NSNotification *) notification {
-    [self.player seekToTime:kCMTimeZero];
+//--------------------------------------------------------------
+- (void)playerItemDidReachEnd:(NSNotification *)notification
+{
+    _bMovieDone = YES;
+    
     // if(loop)
     //[self.player play];
 }
 
-- (void)update
+//--------------------------------------------------------------
+- (BOOL)update
 {
 //    CMTime outputItemTime = kCMTimeInvalid;
 //	
@@ -354,7 +395,7 @@ int count = 0;
 //	}
     
     
-    // check our video output for new frames
+    // Check our video output for new frames.
     CMTime outputItemTime = [self.playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
     if ([self.playerItemVideoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
         // Get pixels.
@@ -378,65 +419,126 @@ int count = 0;
                 NSLog(@"Error creating OpenGL texture %d", err);
             }
         }
-        
-        // create new output image provider - retains the pixel buffer for us
-//        v002CVPixelBufferImageProvider *output = [[v002CVPixelBufferImageProvider alloc] initWithPixelBuffer:pixBuff isFlipped:CVImageBufferIsFlipped(pixBuff) shouldColorMatch:self.inputColorCorrection];
-        
-//        self.outputImage = output;
-        
-//        [output release];
-//        CVBufferRelease(pixBuff);
-        
+                
         // Update time.
-        double currentTime = CMTimeGetSeconds([[self.player currentItem] currentTime]);
-        double duration = CMTimeGetSeconds([[self.player currentItem] duration]);
+        _currentTime = [[self.player currentItem] currentTime];
+        _duration = [[self.player currentItem] duration];
+//        [self.player getCurrentFrame
         
-        self.outputMovieTime = currentTime;
-        self.outputPlayheadPosition = currentTime / duration;
+//        self.outputMovieTime = currentTime;
+//        self.outputPlayheadPosition = currentTime / duration;
         
-        NSLog(@"Curr time is %f, curr playhead is %f", self.outputMovieTime, self.outputPlayheadPosition);
+//        NSLog(@"Curr time is %f, curr playhead is %f", self.outputMovieTime, self.outputPlayheadPosition);
+        
+        return YES;
+    }
+    
+    return NO;
+}
+
+//- (void) render {
+//    // From https://qt.gitorious.org/qt/qtmultimedia/blobs/700b4cdf42335ad02ff308cddbfc37b8d49a1e71/src/plugins/avfoundation/mediaplayer/avfvideoframerenderer.mm
+//    
+//    glPushAttrib(GL_ENABLE_BIT);
+//    glDisable(GL_DEPTH_TEST);
+//    
+//    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+//    glClear(GL_COLOR_BUFFER_BIT);
+//    
+//    glViewport(0, 0, _videoSize.width, _videoSize.height);
+//    
+//    glMatrixMode(GL_PROJECTION);
+//    glPushMatrix();
+//    glLoadIdentity();
+//    
+//    glOrtho(0.0f, videoSize.width, videoSize.height, 0.0f, 0.0f, 1.0f);
+//    
+//    glMatrixMode(GL_MODELVIEW);
+//    glPushMatrix();
+//    glLoadIdentity();
+//    
+//    glTranslatef(videoSize.width/2,videoSize.height/2,0);
+//    
+//    [layerRenderer beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
+//    [layerRenderer addUpdateRect:layerRenderer.layer.bounds];
+//    [layerRenderer render];
+//    [layerRenderer endFrame];
+//    
+//    glMatrixMode(GL_MODELVIEW);
+//    glPopMatrix();
+//    glMatrixMode(GL_PROJECTION);
+//    glPopMatrix();
+//    
+//    glPopAttrib();
+//    
+//    glFinish(); //Rendering needs to be done before passing texture to video frame
+//}
+
+#pragma mark - Pixels and Texture
+
+//--------------------------------------------------------------
+- (double)width
+{
+    return _videoSize.width;
+}
+
+//--------------------------------------------------------------
+- (double)height
+{
+    return _videoSize.height;
+}
+
+//--------------------------------------------------------------
+- (void)pixels:(unsigned char *)outbuf
+{
+    if (_latestPixelFrame == NULL) return;
+		
+//    NSLog(@"pixel buffer width is %ld height %ld and bpr %ld, movie size is %d x %d ",
+//      CVPixelBufferGetWidth(_latestPixelFrame),
+//      CVPixelBufferGetHeight(_latestPixelFrame),
+//      CVPixelBufferGetBytesPerRow(_latestPixelFrame),
+//      (NSInteger)movieSize.width, (NSInteger)movieSize.height);
+    if ((NSInteger)self.width != CVPixelBufferGetWidth(_latestPixelFrame) || (NSInteger)self.height != CVPixelBufferGetHeight(_latestPixelFrame)) {
+        NSLog(@"CoreVideo pixel buffer is %ld x %ld while self reports size of %d x %d. This is most likely caused by a non-square pixel video format such as HDV. Open this video in texture only mode to view it at the appropriate size",
+              CVPixelBufferGetWidth(_latestPixelFrame), CVPixelBufferGetHeight(_latestPixelFrame), (NSInteger)self.width, (NSInteger)self.height);
+        return;
+    }
+    
+    if (CVPixelBufferGetPixelFormatType(_latestPixelFrame) != kCVPixelFormatType_32ARGB) {
+        NSLog(@"QTKitMovieRenderer - Frame pixelformat not kCVPixelFormatType_32ARGB: %d, instead %ld", kCVPixelFormatType_32ARGB, CVPixelBufferGetPixelFormatType(_latestPixelFrame));
+        return;
+    }
+    
+    CVPixelBufferLockBaseAddress(_latestPixelFrame, kCVPixelBufferLock_ReadOnly);
+    //If we are using alpha, the ofxAVFVideoPlayer class will have allocated a buffer of size
+    //video.width * video.height * 4
+    //CoreVideo creates alpha video in the format ARGB, and openFrameworks expects RGBA,
+    //so we need to swap the alpha around using a vImage permutation
+    vImage_Buffer src = {
+        CVPixelBufferGetBaseAddress(_latestPixelFrame),
+        CVPixelBufferGetHeight(_latestPixelFrame),
+        CVPixelBufferGetWidth(_latestPixelFrame),
+        CVPixelBufferGetBytesPerRow(_latestPixelFrame)
+    };
+    vImage_Error err;
+    if (self.useAlpha) {
+        vImage_Buffer dest = { outbuf, self.height, self.width, self.width * 4 };
+        uint8_t permuteMap[4] = { 1, 2, 3, 0 }; //swizzle the alpha around to the end to make ARGB -> RGBA
+        err = vImagePermuteChannels_ARGB8888(&src, &dest, permuteMap, 0);
+    }
+    //If we are are doing RGB then ofxAVFVideoPlayer will have created a buffer of size video.width * video.height * 3
+    //so we use vImage to copy them into the out buffer
+    else {
+        vImage_Buffer dest = { outbuf, self.height, self.width, self.width * 3 };
+        err = vImageConvert_ARGB8888toRGB888(&src, &dest, 0);
+    }
+    
+    CVPixelBufferUnlockBaseAddress(_latestPixelFrame, kCVPixelBufferLock_ReadOnly);
+    
+    if (err != kvImageNoError) {
+        NSLog(@"Error in Pixel Copy vImage_error %ld", err);
     }
 }
-
-- (void) render {
-    // From https://qt.gitorious.org/qt/qtmultimedia/blobs/700b4cdf42335ad02ff308cddbfc37b8d49a1e71/src/plugins/avfoundation/mediaplayer/avfvideoframerenderer.mm
-    
-    glPushAttrib(GL_ENABLE_BIT);
-    glDisable(GL_DEPTH_TEST);
-    
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    glViewport(0, 0, videoSize.width, videoSize.height);
-    
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    
-    glOrtho(0.0f, videoSize.width, videoSize.height, 0.0f, 0.0f, 1.0f);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-    
-    glTranslatef(videoSize.width/2,videoSize.height/2,0);
-    
-    [layerRenderer beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
-    [layerRenderer addUpdateRect:layerRenderer.layer.bounds];
-    [layerRenderer render];
-    [layerRenderer endFrame];
-    
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    
-    glPopAttrib();
-    
-    glFinish(); //Rendering needs to be done before passing texture to video frame
-}
-
-#pragma mark - GL Texture
 
 //--------------------------------------------------------------
 - (BOOL)textureAllocated
@@ -477,6 +579,66 @@ int count = 0;
 	
 	GLenum target = [self textureTarget];
 	glDisable(target);
+}
+
+#pragma mark - Playhead
+
+//--------------------------------------------------------------
+- (double)duration
+{
+    return CMTimeGetSeconds(_duration);
+}
+
+//--------------------------------------------------------------
+- (int)totalFrames
+{
+    return self.duration * self.frameRate;
+}
+
+//--------------------------------------------------------------
+- (double)currentTime
+{
+    return CMTimeGetSeconds(_currentTime);
+}
+
+//--------------------------------------------------------------
+- (void)setCurrentTime:(double)currentTime
+{
+    [self.player seekToTime:CMTimeMakeWithSeconds(currentTime, _duration.timescale)];
+}
+
+//--------------------------------------------------------------
+- (int)currentFrame
+{
+    return self.currentTime * self.frameRate;
+}
+
+//--------------------------------------------------------------
+- (void)setCurrentFrame:(int)currentFrame
+{
+    float position = currentFrame / (float)self.totalFrames;
+    [self setPosition:position];
+}
+
+//--------------------------------------------------------------
+- (double)position
+{
+    return self.currentTime / self.duration;
+}
+
+//--------------------------------------------------------------
+- (void)setPosition:(double)position
+{
+    double time = self.duration * position;
+    //    [self.player seekToTime:CMTimeMakeWithSeconds(time, NSEC_PER_SEC)];
+    [self.player seekToTime:CMTimeMakeWithSeconds(time, _duration.timescale)];
+}
+
+//--------------------------------------------------------------
+- (void)setPlaybackRate:(double)playbackRate
+{
+    _playbackRate = playbackRate;
+    [self.player setRate:_playbackRate];
 }
 
 @end

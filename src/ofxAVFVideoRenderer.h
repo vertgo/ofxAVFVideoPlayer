@@ -26,26 +26,28 @@
 	CVOpenGLTextureRef _latestTextureFrame;
 	CVPixelBufferRef _latestPixelFrame;
     
-    BOOL useTexture;
-    BOOL frameIsNew;
-    
-    double outputPlayheadPosition;
-    double outputDuration;
-    double outputMovieTime;
-    BOOL outputMovieDidEnd;
+	BOOL _useTexture;
+	BOOL _useAlpha;
     
     NSMutableData *amplitudes;
     int numAmplitudes;
     
     CARenderer *layerRenderer;
     
-    CGSize videoSize;
-    CMTime videoDuration;
+    CGSize _videoSize;
     
-    BOOL loading;
-    BOOL ready;
-    BOOL audioReady;
-    BOOL deallocWhenReady;
+    CMTime _currentTime;
+    CMTime _duration;
+    double _frameRate;
+    double _playbackRate;
+    
+    BOOL _bLoading;
+    BOOL _bLoaded;
+    BOOL _bAudioLoaded;
+    BOOL _bPaused;
+    BOOL _bMovieDone;
+    
+    BOOL _bDeallocWhenLoaded;
 	
     id periodicTimeObserver;
 }
@@ -57,44 +59,47 @@
 //@property (nonatomic, retain) AVAssetReader *assetReader;
 //@property (nonatomic, retain) CARenderer *layerRenderer;
 
+@property (nonatomic, assign, readonly) double width;
+@property (nonatomic, assign, readonly) double height;
+
+@property (nonatomic, assign, readonly, getter = isLoading) BOOL bLoading;
+@property (nonatomic, assign, readonly, getter = isLoaded) BOOL bLoaded;
+@property (nonatomic, assign, readonly, getter = isAudioLoaded) BOOL bAudioLoaded;
+@property (nonatomic, assign, getter = isPaused, setter = setPaused:) BOOL bPaused;
+@property (nonatomic, assign, readonly, getter = isMovieDone) BOOL bMovieDone;
+@property (nonatomic, assign, readonly) BOOL isPlaying;
+
+@property (nonatomic, readonly) BOOL useAlpha;
+
+@property (nonatomic, readonly) BOOL useTexture;
 @property (nonatomic, readonly) BOOL textureAllocated;
 @property (nonatomic, readonly) GLuint textureID;
 @property (nonatomic, readonly) GLenum textureTarget;
 
-- (void)bindTexture;
-- (void)unbindTexture;
-
-@property (nonatomic, readonly) BOOL useTexture;
-
-@property (nonatomic, assign) double outputPlayheadPosition;
-@property (nonatomic, assign) double outputDuration;
-@property (nonatomic, assign) double outputMovieTime;
-@property (nonatomic, assign) BOOL outputMovieDidEnd;
+@property (nonatomic, assign, readonly) double frameRate;
+@property (nonatomic, assign, readonly) double duration;
+@property (nonatomic, assign, readonly) int totalFrames;
+@property (nonatomic, assign) double currentTime;
+@property (nonatomic, assign) int currentFrame;
+@property (nonatomic, assign) double position;
+@property (nonatomic, assign) double playbackRate;
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
 @property (nonatomic, retain) NSMutableData *amplitudes;
 @property (nonatomic, assign) int numAmplitudes;
 #endif
 
+- (void)loadFile:(NSString *)filename;
 
+- (void)play;
+- (void)stop;
 
-- (void) loadFile:(NSString *)filename;
-- (void) play;
-- (void) stop;
-- (void) playerItemDidReachEnd:(NSNotification *) notification;
-//- (void) update;
-- (BOOL) isReady;
-- (BOOL) isAudioReady;
-- (BOOL) isLoading;
-- (BOOL) isPlaying;
+- (BOOL)update;
+//- (void) render;
+- (void)playerItemDidReachEnd:(NSNotification *) notification;
 
-- (void)update;
-
-- (void) render;
-
-//- (void)postProcessAmplitude:(float)damping;
-
-- (CGSize) getVideoSize;
-- (CMTime) getVideoDuration;
+- (void)bindTexture;
+- (void)unbindTexture;
+- (void)pixels:(unsigned char *)outbuf;
 
 @end
