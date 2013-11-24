@@ -14,6 +14,7 @@
 #import "ofxAVFVideoRenderer.h"
 #endif
 
+#define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
 
 class ofxAVFVideoPlayer  : public ofBaseVideoPlayer {
 public:
@@ -31,7 +32,7 @@ public:
     void                play();
     void                stop();
     
-#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
+#if NEW_SCHOOL
     float               getAmplitude(int channel = 0);
     float               getAmplitudeAt(float pos, int channel = 0);
     float *             getAllAmplitudes();
@@ -57,7 +58,9 @@ public:
     
     bool                isLoading();
     bool                isLoaded();
+#if NEW_SCHOOL
     bool                isAudioLoaded();
+#endif
     bool                errorLoading();
     
     bool                isPlaying();

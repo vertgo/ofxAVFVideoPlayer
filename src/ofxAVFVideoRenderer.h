@@ -14,11 +14,14 @@
 #import <AVFoundation/AVFoundation.h>
 #import <OpenGL/OpenGL.h>
 
+#define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
+
 @interface AVFVideoRenderer : NSObject
 {
     AVPlayer * _player;
     AVPlayerItemVideoOutput * _playerItemVideoOutput;
     AVPlayerItem * _playerItem;
+    
 //    AVPlayerLayer *playerLayer;
 //    AVAssetReader *assetReader;
     
@@ -28,9 +31,6 @@
     
 	BOOL _useTexture;
 	BOOL _useAlpha;
-    
-    NSMutableData *amplitudes;
-    int numAmplitudes;
     
     CARenderer *layerRenderer;
     
@@ -49,7 +49,11 @@
     
     BOOL _bDeallocWhenLoaded;
 	
-    id periodicTimeObserver;
+#if NEW_SCHOOL
+    NSMutableData *_amplitudes;
+    int _numAmplitudes;
+    id _periodicTimeObserver;
+#endif
 }
 
 @property (nonatomic, retain) AVPlayer *player;
@@ -64,7 +68,9 @@
 
 @property (nonatomic, assign, readonly, getter = isLoading) BOOL bLoading;
 @property (nonatomic, assign, readonly, getter = isLoaded) BOOL bLoaded;
+#if NEW_SCHOOL
 @property (nonatomic, assign, readonly, getter = isAudioLoaded) BOOL bAudioLoaded;
+#endif
 @property (nonatomic, assign, getter = isPaused, setter = setPaused:) BOOL bPaused;
 @property (nonatomic, assign, readonly, getter = isMovieDone) BOOL bMovieDone;
 @property (nonatomic, assign, readonly) BOOL isPlaying;
@@ -84,9 +90,9 @@
 @property (nonatomic, assign) double position;
 @property (nonatomic, assign) double playbackRate;
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
-@property (nonatomic, retain) NSMutableData *amplitudes;
-@property (nonatomic, assign) int numAmplitudes;
+#if NEW_SCHOOL
+@property (nonatomic, retain, readonly) NSMutableData *amplitudes;
+@property (nonatomic, assign, readonly) int numAmplitudes;
 #endif
 
 - (void)loadFile:(NSString *)filename;
@@ -95,8 +101,6 @@
 - (void)stop;
 
 - (BOOL)update;
-//- (void) render;
-- (void)playerItemDidReachEnd:(NSNotification *) notification;
 
 - (void)bindTexture;
 - (void)unbindTexture;

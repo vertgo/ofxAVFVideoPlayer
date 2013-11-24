@@ -151,12 +151,16 @@ bool ofxAVFVideoPlayer::isFrameNew()
     return bNewFrame;
 }
 
-#if __MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7
-float ofxAVFVideoPlayer::getAmplitude(int channel) {
+#if NEW_SCHOOL
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getAmplitude(int channel)
+{
     return getAmplitudeAt(getPosition(), channel);
 }
 
-float ofxAVFVideoPlayer::getAmplitudeAt(float pos, int channel) {
+//--------------------------------------------------------------
+float ofxAVFVideoPlayer::getAmplitudeAt(float pos, int channel)
+{
     pos = ofClamp(pos, 0, 1);
     channel = ofClamp(channel, 0, 1);
     
@@ -180,11 +184,15 @@ float ofxAVFVideoPlayer::getAmplitudeAt(float pos, int channel) {
     return amp;
 }
 
-int ofxAVFVideoPlayer::getNumAmplitudes() {
+//--------------------------------------------------------------
+int ofxAVFVideoPlayer::getNumAmplitudes()
+{
     return [moviePlayer numAmplitudes];
 }
 
-float * ofxAVFVideoPlayer::getAllAmplitudes() {
+//--------------------------------------------------------------
+float * ofxAVFVideoPlayer::getAllAmplitudes()
+{
     return (float *)[moviePlayer.amplitudes bytes];
 }
 #endif
@@ -242,9 +250,13 @@ bool ofxAVFVideoPlayer::isLoaded()
     return bInitialized;
 }
 
-bool ofxAVFVideoPlayer::isAudioLoaded() {
+#if NEW_SCHOOL
+//--------------------------------------------------------------
+bool ofxAVFVideoPlayer::isAudioLoaded()
+{
     return moviePlayer && [moviePlayer isAudioLoaded];
 }
+#endif
 
 //--------------------------------------------------------------
 bool ofxAVFVideoPlayer::errorLoading()
