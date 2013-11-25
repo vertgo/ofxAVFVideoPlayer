@@ -14,11 +14,8 @@
 #import "ofxAVFVideoRenderer.h"
 #endif
 
-#ifndef NEW_SCHOOL
-#define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
-#endif
-
 class ofxAVFVideoPlayer  : public ofBaseVideoPlayer {
+    
 public:
     
     ofxAVFVideoPlayer();
@@ -34,16 +31,11 @@ public:
     void                play();
     void                stop();
     
-#if NEW_SCHOOL
     float               getAmplitude(int channel = 0);
     float               getAmplitudeAt(float pos, int channel = 0);
     float *             getAllAmplitudes();
     int                 getNumAmplitudes();
-#endif
 	
-    OF_DEPRECATED_MSG("Use getTexture()->bind() instead. Ensure decodeMode != OF_QTKIT_DECODE_PIXELS_ONLY.", void bind());
-    OF_DEPRECATED_MSG("Use getTexture()->unbind() instead. Ensure decodeMode != OF_QTKIT_DECODE_PIXELS_ONLY.", void unbind());
-    
     bool                isFrameNew(); //returns true if the frame has changed in this update cycle
     
     // Returns openFrameworks compatible RGBA pixels.
@@ -60,9 +52,7 @@ public:
     
     bool                isLoading();
     bool                isLoaded();
-#if NEW_SCHOOL
     bool                isAudioLoaded();
-#endif
     bool                errorLoading();
     
     bool                isPlaying();
@@ -107,6 +97,8 @@ protected:
     
     ofLoopType currentLoopState;
     
+    bool bTheFutureIsNow;
+    
     bool bPaused;
 	bool bShouldPlay;
 	
@@ -122,10 +114,8 @@ protected:
     bool bInitialized;
     void exit(ofEventArgs& args);
     
-#if NEW_SCHOOL
     void updateTexture();
     void reallocatePixels();
-#endif
     
     ofFbo fbo;
     ofTexture tex;

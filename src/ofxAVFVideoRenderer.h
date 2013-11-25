@@ -14,24 +14,22 @@
 #import <AVFoundation/AVFoundation.h>
 #import <OpenGL/OpenGL.h>
 
-#ifndef NEW_SCHOOL
-#define NEW_SCHOOL (__MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_7)
-#endif
-
 @interface AVFVideoRenderer : NSObject
 {
-    AVPlayer * _player;
-    AVPlayerItemVideoOutput * _playerItemVideoOutput;
-    AVPlayerItem * _playerItem;
+    BOOL _bTheFutureIsNow;
     
-#if NEW_SCHOOL
+    AVPlayer * _player;
+    AVPlayerItem * _playerItem;
+
+    // New school video stuff
+    id _playerItemVideoOutput;
     CVOpenGLTextureCacheRef _textureCache;
 	CVOpenGLTextureRef _latestTextureFrame;
 	CVPixelBufferRef _latestPixelFrame;
-#else
+
+    // Old school video stuff
     AVPlayerLayer * _playerLayer;
     CARenderer * _layerRenderer;
-#endif
     
 	BOOL _useTexture;
     BOOL _useAlpha;
@@ -52,25 +50,20 @@
     
     BOOL _bDeallocWhenLoaded;
 	
-#if NEW_SCHOOL
+    // New school audio stuff
     NSMutableData *_amplitudes;
     int _numAmplitudes;
     id _periodicTimeObserver;
-#endif
 }
 
-@property (nonatomic, retain) AVPlayer *player;
-@property (nonatomic, retain) AVPlayerItemVideoOutput *playerItemVideoOutput;
-@property (nonatomic, retain) AVPlayerItem *playerItem;
+@property (nonatomic, assign, readonly, getter = theFutureIsNow) BOOL bTheFutureIsNow;
 
 @property (nonatomic, assign, readonly) double width;
 @property (nonatomic, assign, readonly) double height;
 
 @property (nonatomic, assign, readonly, getter = isLoading) BOOL bLoading;
 @property (nonatomic, assign, readonly, getter = isLoaded) BOOL bLoaded;
-#if NEW_SCHOOL
 @property (nonatomic, assign, readonly, getter = isAudioLoaded) BOOL bAudioLoaded;
-#endif
 @property (nonatomic, assign, getter = isPaused, setter = setPaused:) BOOL bPaused;
 @property (nonatomic, assign, readonly, getter = isMovieDone) BOOL bMovieDone;
 @property (nonatomic, assign, readonly) BOOL isPlaying;
@@ -78,14 +71,9 @@
 @property (nonatomic, assign) BOOL useAlpha;
 @property (nonatomic, assign) BOOL useTexture;
 
-#if NEW_SCHOOL
 @property (nonatomic, assign, readonly) BOOL textureAllocated;
 @property (nonatomic, assign, readonly) GLuint textureID;
 @property (nonatomic, assign, readonly) GLenum textureTarget;
-#else
-@property (nonatomic, retain) AVPlayerLayer *playerLayer;
-@property (nonatomic, retain) CARenderer *layerRenderer;
-#endif
 
 @property (nonatomic, assign, readonly) double frameRate;
 @property (nonatomic, assign, readonly) double duration;
@@ -97,10 +85,8 @@
 @property (nonatomic, assign, getter = loops, setter = setLoops:) BOOL bLoops;
 @property (nonatomic, assign) float volume;
 
-#if NEW_SCHOOL
 @property (nonatomic, retain, readonly) NSMutableData *amplitudes;
 @property (nonatomic, assign, readonly) int numAmplitudes;
-#endif
 
 - (void)loadFilePath:(NSString *)filePath;
 - (void)loadURLPath:(NSString *)urlPath;
@@ -109,14 +95,13 @@
 - (void)play;
 - (void)stop;
 
+// New school video stuff
 - (BOOL)update;
-
-#if NEW_SCHOOL
 - (void)bindTexture;
 - (void)unbindTexture;
 - (void)pixels:(unsigned char *)outbuf;
-#else
+
+// Old school video stuff
 - (void)render;
-#endif
 
 @end
