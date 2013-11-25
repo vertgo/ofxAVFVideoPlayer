@@ -619,7 +619,11 @@ int count = 0;
 //--------------------------------------------------------------
 - (double)currentTime
 {
+#if NEW_SCHOOL
     return CMTimeGetSeconds(_currentTime);
+#else
+    return CMTimeGetSeconds([self.player currentTime]);
+#endif
 }
 
 //--------------------------------------------------------------
