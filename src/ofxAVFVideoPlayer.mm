@@ -326,6 +326,12 @@ float ofxAVFVideoPlayer::getCurrentTime()
 }
 
 //--------------------------------------------------------------
+float ofxAVFVideoPlayer::getPositionInSeconds()
+{
+    return getCurrentTime();
+}
+
+//--------------------------------------------------------------
 int ofxAVFVideoPlayer::getCurrentFrame()
 {
     return moviePlayer.currentFrame;
@@ -394,6 +400,12 @@ void ofxAVFVideoPlayer::setTime(float position)
 	else {
         [moviePlayer setCurrentTime:position];
 	}
+}
+
+//--------------------------------------------------------------
+void ofxAVFVideoPlayer::setPositionInSeconds(float seconds)
+{
+    setTime(seconds);
 }
 
 //--------------------------------------------------------------

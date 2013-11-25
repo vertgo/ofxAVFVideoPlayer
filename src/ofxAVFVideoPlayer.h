@@ -70,6 +70,7 @@ public:
     
     float               getPosition();
     float               getCurrentTime();
+    float               getPositionInSeconds();
     int                 getCurrentFrame();
     float               getDuration();
     int                 getTotalNumFrames();
@@ -80,6 +81,7 @@ public:
     
     void                setPosition(float pct);
 	void                setTime(float seconds);
+    void                setPositionInSeconds(float seconds);
     void                setFrame(int frame); // frame 0 = first frame...
     void                setBalance(float balance);
     void                setPaused(bool bPaused);
