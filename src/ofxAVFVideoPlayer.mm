@@ -48,8 +48,6 @@ bool ofxAVFVideoPlayer::loadMovie(string path)
         close();
     }
 	
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
     moviePlayer = [[AVFVideoRenderer alloc] init];
     [moviePlayer setUseAlpha:(pixelFormat == OF_PIXELS_RGBA)];
     [moviePlayer setUseTexture:YES];
@@ -68,8 +66,6 @@ bool ofxAVFVideoPlayer::loadMovie(string path)
     
     bShouldPlay = false;
 	
-    [pool release];
-    
     return true;
 }
 
@@ -90,6 +86,7 @@ void ofxAVFVideoPlayer::close()
     }
     
     bInitialized = false;
+    bNewFrame = false;
 }
 
 //--------------------------------------------------------------

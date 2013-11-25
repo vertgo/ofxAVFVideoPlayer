@@ -28,7 +28,6 @@
 	CVPixelBufferRef _latestPixelFrame;
 
     // Old school video stuff
-    AVPlayerLayer * _playerLayer;
     CARenderer * _layerRenderer;
     
 	BOOL _useTexture;

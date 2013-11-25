@@ -121,7 +121,6 @@ int count = 0;
         static const NSString *kItemStatusContext;
         // Perform the following back on the main thread
         dispatch_async(dispatch_get_main_queue(), ^{
-            NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
             // Check to see if the file loaded
             NSError *error;
             AVKeyValueStatus status = [asset statusOfValueForKey:tracksKey error:&error];
@@ -170,13 +169,13 @@ int count = 0;
                 else {
                     _player = [AVPlayer playerWithPlayerItem:_playerItem];
                     
-                    _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
+                    AVPlayerLayer * playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
                     _layerRenderer = [CARenderer rendererWithCGLContext:CGLGetCurrentContext() options:nil];
-                    _layerRenderer.layer = _playerLayer;
+                    _layerRenderer.layer = playerLayer;
                     
                     // Video is centered on 0,0 for some reason so layer bounds have to start at -width/2,-height/2
                     _layerRenderer.bounds = CGRectMake(_videoSize.width * -0.5, _videoSize.height * -0.5, _videoSize.width, _videoSize.height);
-                    _playerLayer.bounds = _layerRenderer.bounds;
+                    playerLayer.bounds = _layerRenderer.bounds;
                 }
                 
                 if (self.theFutureIsNow) {
@@ -280,8 +279,6 @@ int count = 0;
             
             // If dealloc is called immediately after loadFile, we have to defer releasing properties.
             if (_bDeallocWhenLoaded) [self dealloc];
-            
-            [pool release];
         });
     }];
 }
@@ -298,14 +295,15 @@ int count = 0;
         [[NSNotificationCenter defaultCenter] removeObserver:self];
         if (_playerItem) {
             [_playerItem removeObserver:self forKeyPath:@"status"];
-            [_playerItem release];
+//            [_playerItem release];
+            _playerItem = nil;
         }
-                
+
 //        [_player release];  // No need
         _player = nil;
         
         if (self.theFutureIsNow) {
-            [_playerItemVideoOutput release];
+//            [_playerItemVideoOutput release];
             _playerItemVideoOutput = nil;
         
             if (_textureCache != NULL) {
@@ -376,8 +374,7 @@ int count = 0;
 //--------------------------------------------------------------
 - (BOOL)isPlaying
 {
-    if (![self isLoaded])
-        return false;
+    if (![self isLoaded]) return NO;
     
 	return ![self isMovieDone] && ![self isPaused];
 }
@@ -404,6 +401,8 @@ int count = 0;
 - (BOOL)update
 {
     if (self.theFutureIsNow == NO) return YES;
+    
+    if (![self isLoaded]) return NO;
 
     // Check our video output for new frames.
     CMTime outputItemTime = [_playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
