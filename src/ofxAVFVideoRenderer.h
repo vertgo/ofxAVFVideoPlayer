@@ -55,6 +55,10 @@
     id _periodicTimeObserver;
 }
 
+@property (nonatomic, retain) AVPlayer * player;
+@property (nonatomic, retain) AVPlayerItem* playerItem;
+@property (nonatomic, retain) id playerItemVideoOutput;
+
 @property (nonatomic, assign, readonly, getter = theFutureIsNow) BOOL bTheFutureIsNow;
 
 @property (nonatomic, assign, readonly) double width;
@@ -84,7 +88,7 @@
 @property (nonatomic, assign, getter = loops, setter = setLoops:) BOOL bLoops;
 @property (nonatomic, assign) float volume;
 
-@property (nonatomic, retain, readonly) NSMutableData *amplitudes;
+@property (nonatomic, retain, readonly) NSMutableData* amplitudes;
 @property (nonatomic, assign, readonly) int numAmplitudes;
 
 - (void)loadFilePath:(NSString *)filePath;

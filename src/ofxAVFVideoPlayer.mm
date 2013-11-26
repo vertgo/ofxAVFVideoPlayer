@@ -25,15 +25,17 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer()
     currentLoopState = OF_LOOP_NORMAL;
     
     bTheFutureIsNow = false;
-	
-	ofAddListener(ofEvents().exit, this, &ofxAVFVideoPlayer::exit);
+
+	//JG attempting to fix crash
+//	ofAddListener(ofEvents().exit, this, &ofxAVFVideoPlayer::exit);
 }
 
 //--------------------------------------------------------------
-void ofxAVFVideoPlayer::exit(ofEventArgs& args)
-{
-	close();
-}
+//JG I think it may be bad practice to attach video players to the exit events. Let the auto destructor do this
+//void ofxAVFVideoPlayer::exit(ofEventArgs& args)
+//{
+//	close();
+//}
 
 //--------------------------------------------------------------
 ofxAVFVideoPlayer::~ofxAVFVideoPlayer()
@@ -44,9 +46,12 @@ ofxAVFVideoPlayer::~ofxAVFVideoPlayer()
 //--------------------------------------------------------------
 bool ofxAVFVideoPlayer::loadMovie(string path)
 {
+
     if (bInitialized) {
         close();
     }
+	
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	
     moviePlayer = [[AVFVideoRenderer alloc] init];
     [moviePlayer setUseAlpha:(pixelFormat == OF_PIXELS_RGBA)];
@@ -63,9 +68,9 @@ bool ofxAVFVideoPlayer::loadMovie(string path)
         path = ofToDataPath(path, false);
         [moviePlayer loadFilePath:[NSString stringWithUTF8String:path.c_str()]];
     }
+	[pool release];
     
     bShouldPlay = false;
-	
     return true;
 }
 
@@ -79,10 +84,13 @@ void ofxAVFVideoPlayer::closeMovie()
 void ofxAVFVideoPlayer::close()
 {
     pixels.clear();
-    
-    if (moviePlayer) {
-        [moviePlayer release];
-        moviePlayer = NULL;
+	
+    if (moviePlayer != nil) {
+		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+        [moviePlayer autorelease];
+        moviePlayer = nil;
+		[pool release];
+
     }
     
     bInitialized = false;

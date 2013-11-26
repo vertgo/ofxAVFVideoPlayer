@@ -19,6 +19,9 @@
 
 @implementation AVFVideoRenderer
 
+@synthesize player = _player;
+@synthesize playerItem = _playerItem;
+@synthesize playerItemVideoOutput = _playerItemVideoOutput;
 @synthesize bTheFutureIsNow = _bTheFutureIsNow;
 
 @synthesize useTexture = _useTexture;
@@ -48,7 +51,8 @@ int count = 0;
         NSLog(@"Is this the future? %d", _bTheFutureIsNow);
         
         if (self.theFutureIsNow) {
-            _player = [[AVPlayer alloc] init];
+            self.player = [[AVPlayer alloc] init];
+			[self.player autorelease];
             _amplitudes = [[NSMutableData data] retain];
         }
         
@@ -135,25 +139,26 @@ int count = 0;
                 _duration = asset.duration;
                 _frameRate = [videoTrack nominalFrameRate];
                 
-                _playerItem = [AVPlayerItem playerItemWithAsset:asset];
-                [_playerItem addObserver:self forKeyPath:@"status" options:0 context:&kItemStatusContext];
+                self.playerItem = [AVPlayerItem playerItemWithAsset:asset];
+                [self.playerItem addObserver:self forKeyPath:@"status" options:0 context:&kItemStatusContext];
                 
                 // Notify this object when the player reaches the end
                 // This allows us to loop the video
                 [[NSNotificationCenter defaultCenter] addObserver:self
                                                          selector:@selector(playerItemDidReachEnd:)
                                                              name:AVPlayerItemDidPlayToEndTimeNotification
-                                                           object:_playerItem];
+                                                           object:self.playerItem];
                 
                 if (self.theFutureIsNow) {
-                    [_player replaceCurrentItemWithPlayerItem:_playerItem];
+                    [self.player replaceCurrentItemWithPlayerItem:self.playerItem];
 
                     // Create and attach video output. 10.8 Only!!!
-                    _playerItemVideoOutput = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:[self pixelBufferAttributes]];
-                    if (_playerItemVideoOutput) {
-                        [(AVPlayerItemVideoOutput *)_playerItemVideoOutput setSuppressesPlayerRendering:YES];
+                    self.playerItemVideoOutput = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:[self pixelBufferAttributes]];
+					[self.playerItemVideoOutput autorelease];
+                    if (self.playerItemVideoOutput) {
+                        [(AVPlayerItemVideoOutput *)self.playerItemVideoOutput setSuppressesPlayerRendering:YES];
                     }
-                    [_player.currentItem addOutput:_playerItemVideoOutput];
+                    [self.player.currentItem addOutput:self.playerItemVideoOutput];
                     
                     // Create CVOpenGLTextureCacheRef for optimal CVPixelBufferRef to GL texture conversion.
                     if (self.useTexture && !_textureCache) {
@@ -167,9 +172,9 @@ int count = 0;
                     }
                 }
                 else {
-                    _player = [AVPlayer playerWithPlayerItem:_playerItem];
+                    self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
                     
-                    AVPlayerLayer * playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
+                    AVPlayerLayer * playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
                     _layerRenderer = [CARenderer rendererWithCGLContext:CGLGetCurrentContext() options:nil];
                     _layerRenderer.layer = playerLayer;
                     
@@ -207,12 +212,12 @@ int count = 0;
                             count = 0;
                         
                             // Add a periodic time observer that will store the audio track data in a buffer that we can access later
-                            _periodicTimeObserver = [_player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
+                            _periodicTimeObserver = [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1001, [audioTrack nominalFrameRate] * 1001)
                                                                                           queue:dispatch_queue_create("eventQueue", NULL)
                                                                                      usingBlock:^(CMTime time) {
                                                                                          if ([assetReader status] == AVAssetReaderStatusCompleted) {
                                                                                              // Got all the data we need, kill this block.
-                                                                                             [_player removeTimeObserver:_periodicTimeObserver];
+                                                                                             [self.player removeTimeObserver:_periodicTimeObserver];
                                                                                              
                                                                                              _numAmplitudes = [_amplitudes length] / sizeof(float);
                                                                                              _bAudioLoaded = YES;
@@ -278,7 +283,7 @@ int count = 0;
             }
             
             // If dealloc is called immediately after loadFile, we have to defer releasing properties.
-            if (_bDeallocWhenLoaded) [self dealloc];
+            //if (_bDeallocWhenLoaded) [self dealloc];
         });
     }];
 }
@@ -286,25 +291,15 @@ int count = 0;
 //--------------------------------------------------------------
 - (void)dealloc
 {
-    if (_bLoading) {
-        _bDeallocWhenLoaded = YES;
-    }
-    else {
+//    if (_bLoading) {
+//        _bDeallocWhenLoaded = YES;
+//    }
+//    else {
         [self stop];
-        
-        [[NSNotificationCenter defaultCenter] removeObserver:self];
-        if (_playerItem) {
-            [_playerItem removeObserver:self forKeyPath:@"status"];
-//            [_playerItem release];
-            _playerItem = nil;
-        }
-
-//        [_player release];  // No need
-        _player = nil;
-        
+                
         if (self.theFutureIsNow) {
 //            [_playerItemVideoOutput release];
-            _playerItemVideoOutput = nil;
+            self.playerItemVideoOutput = nil;
         
             if (_textureCache != NULL) {
                 CVOpenGLTextureCacheRelease(_textureCache);
@@ -339,23 +334,35 @@ int count = 0;
             }
         }
         
-        if (!_bDeallocWhenLoaded) [super dealloc];
-    }
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+        if (self.playerItem) {
+            [self.playerItem removeObserver:self forKeyPath:@"status"];
+			//            [_playerItem release];
+            self.playerItem = nil;
+        }
+		// No need //JG: I think we do need to release the player
+//        [_player release];
+		//release the retained player using retain-generated property
+		[self.player replaceCurrentItemWithPlayerItem:nil];
+        self.player = nil;
+//        if (!_bDeallocWhenLoaded)
+		[super dealloc];
+//    }
 }
 
 //--------------------------------------------------------------
 - (void)play
 {
-    [_player play];
-    [_player setRate:_playbackRate];
+    [self.player play];
+    self.player.rate = _playbackRate;
 }
 
 //--------------------------------------------------------------
 - (void)stop
 {
     // Pause and rewind.
-    [_player pause];
-    [_player seekToTime:kCMTimeZero];
+    [self.player pause];
+    [self.player seekToTime:kCMTimeZero];
 }
 
 //--------------------------------------------------------------
@@ -363,11 +370,11 @@ int count = 0;
 {
     _bPaused = bPaused;
     if (_bPaused) {
-        [_player pause];
+        [self.player pause];
     }
     else {
-        [_player play];
-        [_player setRate:_playbackRate];
+        [self.player play];
+        self.player.rate = _playbackRate;
     }
 }
 
@@ -405,14 +412,14 @@ int count = 0;
     if (![self isLoaded]) return NO;
 
     // Check our video output for new frames.
-    CMTime outputItemTime = [_playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
-    if ([_playerItemVideoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
+    CMTime outputItemTime = [self.playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
+    if ([self.playerItemVideoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
         // Get pixels.
         if (_latestPixelFrame != NULL) {
             CVPixelBufferRelease(_latestPixelFrame);
             _latestPixelFrame = NULL;
         }
-        _latestPixelFrame = [_playerItemVideoOutput copyPixelBufferForItemTime:outputItemTime
+        _latestPixelFrame = [self.playerItemVideoOutput copyPixelBufferForItemTime:outputItemTime
                                                             itemTimeForDisplay:NULL];
         
         if (self.useTexture) {
@@ -430,8 +437,8 @@ int count = 0;
         }
                 
         // Update time.
-        _currentTime = [[_player currentItem] currentTime];
-        _duration = [[_player currentItem] duration];
+        _currentTime = self.player.currentItem.currentTime;
+        _duration = self.player.currentItem.duration;
         
         return YES;
     }
@@ -619,7 +626,7 @@ int count = 0;
         return CMTimeGetSeconds(_currentTime);
     }
 
-    return CMTimeGetSeconds([_player currentTime]);
+    return CMTimeGetSeconds(self.player.currentTime);
 }
 
 //--------------------------------------------------------------
@@ -665,13 +672,13 @@ int count = 0;
 //--------------------------------------------------------------
 - (float)volume
 {
-    return _player.volume;
+    return self.player.volume;
 }
 
 //--------------------------------------------------------------
 - (void)setVolume:(float)volume
 {
-    [_player setVolume:volume];
+    self.player.volume = volume;
 }
 
 @end
