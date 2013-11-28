@@ -330,12 +330,9 @@ int count = 0;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     if (self.playerItem) {
         [self.playerItem removeObserver:self forKeyPath:@"status"];
-        //            [_playerItem release];
         self.playerItem = nil;
     }
-    // No need //JG: I think we do need to release the player
-//    [_player release];
-    //release the retained player using retain-generated property
+
     [self.player replaceCurrentItemWithPlayerItem:nil];
     self.player = nil;
 
