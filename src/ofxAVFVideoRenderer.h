@@ -46,9 +46,7 @@
     BOOL _bAudioLoaded;
     BOOL _bPaused;
     BOOL _bMovieDone;
-    
-    BOOL _bDeallocWhenLoaded;
-	
+    	
     // New school audio stuff
     NSMutableData *_amplitudes;
     int _numAmplitudes;

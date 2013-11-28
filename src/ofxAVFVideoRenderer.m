@@ -61,7 +61,6 @@ int count = 0;
         _bAudioLoaded = NO;
         _bPaused = NO;
         _bMovieDone = NO;
-        _bDeallocWhenLoaded = NO;
         
         _useTexture = YES;
         _useAlpha = NO;
@@ -103,7 +102,6 @@ int count = 0;
     _bAudioLoaded = NO;
     _bPaused = NO;
     _bMovieDone = NO;
-    _bDeallocWhenLoaded = NO;
     
     _frameRate = 0.0;
     _playbackRate = 1.0;
@@ -281,9 +279,6 @@ int count = 0;
                 _bLoaded = NO;
                 NSLog(@"There was an error loading the file: %@", error);
             }
-            
-            // If dealloc is called immediately after loadFile, we have to defer releasing properties.
-            //if (_bDeallocWhenLoaded) [self dealloc];
         });
     }];
 }
@@ -291,63 +286,57 @@ int count = 0;
 //--------------------------------------------------------------
 - (void)dealloc
 {
-//    if (_bLoading) {
-//        _bDeallocWhenLoaded = YES;
-//    }
-//    else {
-        [self stop];
-                
-        if (self.theFutureIsNow) {
-//            [_playerItemVideoOutput release];
-            self.playerItemVideoOutput = nil;
-        
-            if (_textureCache != NULL) {
-                CVOpenGLTextureCacheRelease(_textureCache);
-                _textureCache = NULL;
-            }
-            if (_latestTextureFrame != NULL) {
-                CVOpenGLTextureRelease(_latestTextureFrame);
-                _latestTextureFrame = NULL;
-            }
-            if (_latestPixelFrame != NULL) {
-                CVPixelBufferRelease(_latestPixelFrame);
-                _latestPixelFrame = NULL;
-            }
+    [self stop];
             
-            if (_amplitudes) {
-                [_amplitudes release];
-                _amplitudes = nil;
-            }
-            _numAmplitudes = 0;
+    if (self.theFutureIsNow) {
+        self.playerItemVideoOutput = nil;
+    
+        if (_textureCache != NULL) {
+            CVOpenGLTextureCacheRelease(_textureCache);
+            _textureCache = NULL;
         }
-        else {
-            // SK: Releasing the CARenderer is slow for some reason
-            //     It will freeze the main thread for a few dozen mS.
-            //     If you're swapping in and out videos a lot, the loadFile:
-            //     method should be re-written to just re-use and re-size
-            //     these layers/objects rather than releasing and reallocating
-            //     them every time a new file is needed.
-            
-            if (_layerRenderer) {
-                [_layerRenderer release];
-                _layerRenderer = nil;
-            }
+        if (_latestTextureFrame != NULL) {
+            CVOpenGLTextureRelease(_latestTextureFrame);
+            _latestTextureFrame = NULL;
+        }
+        if (_latestPixelFrame != NULL) {
+            CVPixelBufferRelease(_latestPixelFrame);
+            _latestPixelFrame = NULL;
         }
         
-        [[NSNotificationCenter defaultCenter] removeObserver:self];
-        if (self.playerItem) {
-            [self.playerItem removeObserver:self forKeyPath:@"status"];
-			//            [_playerItem release];
-            self.playerItem = nil;
+        if (_amplitudes) {
+            [_amplitudes release];
+            _amplitudes = nil;
         }
-		// No need //JG: I think we do need to release the player
-//        [_player release];
-		//release the retained player using retain-generated property
-		[self.player replaceCurrentItemWithPlayerItem:nil];
-        self.player = nil;
-//        if (!_bDeallocWhenLoaded)
-		[super dealloc];
-//    }
+        _numAmplitudes = 0;
+    }
+    else {
+        // SK: Releasing the CARenderer is slow for some reason
+        //     It will freeze the main thread for a few dozen mS.
+        //     If you're swapping in and out videos a lot, the loadFile:
+        //     method should be re-written to just re-use and re-size
+        //     these layers/objects rather than releasing and reallocating
+        //     them every time a new file is needed.
+        
+        if (_layerRenderer) {
+            [_layerRenderer release];
+            _layerRenderer = nil;
+        }
+    }
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    if (self.playerItem) {
+        [self.playerItem removeObserver:self forKeyPath:@"status"];
+        //            [_playerItem release];
+        self.playerItem = nil;
+    }
+    // No need //JG: I think we do need to release the player
+//    [_player release];
+    //release the retained player using retain-generated property
+    [self.player replaceCurrentItemWithPlayerItem:nil];
+    self.player = nil;
+
+    [super dealloc];
 }
 
 //--------------------------------------------------------------
