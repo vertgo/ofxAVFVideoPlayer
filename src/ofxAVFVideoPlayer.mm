@@ -25,17 +25,7 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer()
     currentLoopState = OF_LOOP_NORMAL;
     
     bTheFutureIsNow = false;
-
-	//JG attempting to fix crash
-//	ofAddListener(ofEvents().exit, this, &ofxAVFVideoPlayer::exit);
 }
-
-//--------------------------------------------------------------
-//JG I think it may be bad practice to attach video players to the exit events. Let the auto destructor do this
-//void ofxAVFVideoPlayer::exit(ofEventArgs& args)
-//{
-//	close();
-//}
 
 //--------------------------------------------------------------
 ofxAVFVideoPlayer::~ofxAVFVideoPlayer()
