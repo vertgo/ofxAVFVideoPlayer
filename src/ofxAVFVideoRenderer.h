@@ -54,8 +54,6 @@
 }
 
 @property (nonatomic, retain) AVPlayer * player;
-@property (nonatomic, retain) AVPlayerItem* playerItem;
-@property (nonatomic, retain) id playerItemVideoOutput;
 
 @property (nonatomic, assign, readonly, getter = theFutureIsNow) BOOL bTheFutureIsNow;
 

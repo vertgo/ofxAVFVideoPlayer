@@ -15,6 +15,9 @@
 - (NSDictionary *)pixelBufferAttributes;
 - (void)render;
 
+@property (nonatomic, retain) AVPlayerItem * playerItem;
+@property (nonatomic, retain) id playerItemVideoOutput;
+
 @end
 
 @implementation AVFVideoRenderer
