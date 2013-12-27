@@ -387,7 +387,7 @@ int count = 0;
     _bMovieDone = YES;
     
     if (self.bLoops) {
-        // Start over.
+        _bMovieDone = NO;
         [self stop];
         [self play];
     }
