@@ -352,6 +352,7 @@ int count = 0;
     // Pause and rewind.
     [self.player pause];
     [self.player seekToTime:kCMTimeZero];
+    _bMovieDone = NO;
 }
 
 //--------------------------------------------------------------
