@@ -28,6 +28,7 @@ public:
     
     void                idleMovie();
     void                update();
+    void                syncToTime( float inTime );
     void                play();
     void                stop();
     
@@ -55,6 +56,8 @@ public:
     bool                isAudioLoaded();
     bool                errorLoading();
     
+    bool                playing;
+    bool                getPlaying(); // apparently isPlaying never returns what i want, so i have to make my own
     bool                isPlaying();
     bool                getIsMovieDone();
     

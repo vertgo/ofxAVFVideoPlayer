@@ -25,6 +25,7 @@ ofxAVFVideoPlayer::ofxAVFVideoPlayer()
     currentLoopState = OF_LOOP_NORMAL;
     
     bTheFutureIsNow = false;
+    playing = false;
 }
 
 //--------------------------------------------------------------
@@ -137,8 +138,40 @@ void ofxAVFVideoPlayer::update()
 }
 
 //--------------------------------------------------------------
+//added by Mike
+void ofxAVFVideoPlayer::syncToTime(float inTime){
+    
+    float curVidTime = (getPosition() * getDuration() );
+    float curOffset = (inTime -curVidTime);
+    float adjustedSpeed = CLAMP( 1.f + ( curOffset )/10.f, .9f, 1.2f);
+    //
+    float curSpeed = getSpeed();
+    
+    /*if ( abs(curOffset) >1.9f ){
+     cout << "jumping playhead\n";
+     player->setSpeed(1.f);
+     player->setPositionInSeconds(playHead + .5f); //set it to the time at next frame and see what happens then
+     }*/
+    
+    //if they are both the same sign (like readjust when it crosses from having to speed up to slow down)
+    //and the are pretty close, then don't readjust
+    //else
+    if ( (adjustedSpeed * curSpeed > 0) && abs( adjustedSpeed - curSpeed ) > 0.03f ){
+        cout << "adjusting speed\n";
+        cout << "inTime:"<<inTime<< "curVidTime:" << curVidTime << ", curOffset:" << curOffset << ", adjustedSpeed:" << adjustedSpeed << ", getSpeed:"<<getSpeed()<<endl;
+
+        setSpeed( adjustedSpeed ); //maybe setting the playspeed too much slows it down
+    }
+    
+
+    //cout << "playhead:"<<playHead<< "curVidTime:" << curVidTime << ", curOffset:" << curOffset << ", adjustedSpeed:" << adjustedSpeed << ", getSpeed:"<<player->getSpeed()<<endl;
+
+}
+
+//--------------------------------------------------------------
 void ofxAVFVideoPlayer::play()
 {
+    playing = true;
 	if (bInitialized) {
         ofLogVerbose("ofxAVFVideoPlayer::play()") << "Initialized and playing at time " << getCurrentTime();
 		[moviePlayer play];
@@ -151,6 +184,7 @@ void ofxAVFVideoPlayer::play()
 //--------------------------------------------------------------
 void ofxAVFVideoPlayer::stop()
 {
+    playing = false;
     [moviePlayer stop];
 }
 
@@ -308,6 +342,11 @@ bool ofxAVFVideoPlayer::isPlaying()
 {
     return moviePlayer && [moviePlayer isPlaying];
 }
+//--------------------------------------------------------------
+//added by mike because isPlaying() doesn't return WHETHER OR NOT IT'S FUCKING PLAYING
+bool ofxAVFVideoPlayer::getPlaying(){
+    return playing;
+}
 
 //--------------------------------------------------------------
 bool ofxAVFVideoPlayer::getIsMovieDone()
@@ -432,6 +471,7 @@ void ofxAVFVideoPlayer::setBalance(float balance)
 void ofxAVFVideoPlayer::setPaused(bool bPaused)
 {
     [moviePlayer setPaused:bPaused];
+    playing = !bPaused;
 }
 
 //--------------------------------------------------------------
