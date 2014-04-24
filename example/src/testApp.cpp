@@ -1,38 +1,56 @@
 #include "testApp.h"
-
+#define NUM_VIDEOS 4
 //--------------------------------------------------------------
 void testApp::setup()
 {
     ofSetVerticalSync(true);
     ofBackground(0);
     
-    video.loadMovie("test.mov");
-    video.play();
-    video.setLoopState(OF_LOOP_NORMAL);
+    
+    playing = false; //I AIN'T PLAYIN', SON
+    
+    for (int i=0; i<NUM_VIDEOS; i++ ){
+        ofxAVFVideoPlayer* curVideo = new ofxAVFVideoPlayer();
+        curVideo->loadMovie("cap.mp4");
+        //curVideo->loadMovie("test.mov");
+        
+        curVideo->setLoopState(OF_LOOP_NONE);
+        videos.push_back( curVideo );
+
+    }
+    
 }
 
 //--------------------------------------------------------------
 void testApp::update()
 {
-    video.update();
-    if (video.isLoaded() && !image.isAllocated()) {
-        image.allocate(video.getWidth(), video.getHeight(), OF_IMAGE_COLOR);
-    }
-    if (video.isFrameNew()) {
-        image.setFromPixels(video.getPixelsRef());
+    if ( playing ){
+        for (int i=0; i<NUM_VIDEOS; i++ ){
+            long long now = ofGetSystemTime();
+            long long playHeadMS = now - vidStartTime;
+            float playHead = ((float)playHeadMS)/1000.f;
+            if ( playHead > 10000){
+                cout << "playheadMS:" << playHeadMS << ", now:" << now << ", startTime:" << vidStartTime <<endl;
+            }
+            videos[ i ]->syncToTime( playHead );
+            videos[i]->update();
+        }
     }
 }
 
 //--------------------------------------------------------------
 void testApp::draw()
 {
-    video.draw(0, 0);
-	if(image.bAllocated()){
-		image.draw(video.getWidth(), 0);
+    for (int i=0; i<NUM_VIDEOS; i++ ){
+        videos[i]->draw(ofGetWidth()/NUM_VIDEOS * i, 0, ofGetWidth()/NUM_VIDEOS, ofGetHeight());
     }
+    
+	/*if(image.bAllocated()){
+		image.draw(video.getWidth(), 0);
+    }*/
 	
     // Draw a timeline at the bottom of the screen.
-    ofNoFill();
+    /*ofNoFill();
     ofSetColor(255);
     ofRect(0, ofGetHeight(), ofGetWidth(), -100);
     float playheadX = video.getPosition() * ofGetWidth();
@@ -50,32 +68,48 @@ void testApp::draw()
                                 "[space]: Pause \n" +
                                 "[up]/[down]: Adjust Rate \n" +
                                 "[mouse y]: Volume",
-                                10, 20);
+                                10, 20);*/
 }
-
+//--------------------------------------------------------------
+void testApp::go(){
+    playing = true;
+    vidStartTime = ofGetSystemTime();
+    for (int i=0; i<NUM_VIDEOS; i++ ){
+        
+        videos[i]->play();
+        
+        
+        
+        
+    }
+}
 //--------------------------------------------------------------
 void testApp::keyPressed(int key)
 {
     switch (key) {
-        case ' ':
+            
+        case 'g':
+            go();
+            break;
+        /*case ' ':
             if (video.isPaused()) video.setPaused(false);
             else video.setPaused(true);
             break;
-            
+         */
         case 'a':
-            video.play();
+            //video.play();
             break;
             
         case 's':
-            video.stop();
+            //video.stop();
             break;
             
         case OF_KEY_UP:
-            video.setSpeed(video.getSpeed() * 1.1);
+            //video.setSpeed(video.getSpeed() * 1.1);
             break;
             
         case OF_KEY_DOWN:
-            video.setSpeed(video.getSpeed() * 0.9);
+            //video.setSpeed(video.getSpeed() * 0.9);
             break;
             
         default:
@@ -91,7 +125,7 @@ void testApp::keyReleased(int key){
 //--------------------------------------------------------------
 void testApp::mouseMoved(int x, int y)
 {
-    video.setVolume(ofMap(y, 0, ofGetHeight(), 1.0, 0.0, true));
+    //video.setVolume(ofMap(y, 0, ofGetHeight(), 1.0, 0.0, true));
 }
 
 //--------------------------------------------------------------

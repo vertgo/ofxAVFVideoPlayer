@@ -20,6 +20,10 @@ class testApp : public ofBaseApp
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-        ofxAVFVideoPlayer video;
+        unsigned long long vidStartTime;
+        void go();
+    bool playing;
+    
+        vector<ofxAVFVideoPlayer*> videos;
         ofImage image;
 };

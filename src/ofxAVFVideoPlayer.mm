@@ -143,9 +143,11 @@ void ofxAVFVideoPlayer::syncToTime(float inTime){
     
     float curVidTime = (getPosition() * getDuration() );
     float curOffset = (inTime -curVidTime);
-    float adjustedSpeed = CLAMP( 1.f + ( curOffset )/10.f, .9f, 1.2f);
+    float adjustedSpeed = CLAMP( 1.f + ( curOffset )/5.f, .9f, 1.2f);
     //
     float curSpeed = getSpeed();
+    
+    
     
     /*if ( abs(curOffset) >1.9f ){
      cout << "jumping playhead\n";
@@ -171,6 +173,7 @@ void ofxAVFVideoPlayer::syncToTime(float inTime){
 //--------------------------------------------------------------
 void ofxAVFVideoPlayer::play()
 {
+    cout << "setting playing true\n";
     playing = true;
 	if (bInitialized) {
         ofLogVerbose("ofxAVFVideoPlayer::play()") << "Initialized and playing at time " << getCurrentTime();
@@ -184,6 +187,7 @@ void ofxAVFVideoPlayer::play()
 //--------------------------------------------------------------
 void ofxAVFVideoPlayer::stop()
 {
+    cout << "setting playing false\n";
     playing = false;
     [moviePlayer stop];
 }
@@ -472,6 +476,7 @@ void ofxAVFVideoPlayer::setPaused(bool bPaused)
 {
     [moviePlayer setPaused:bPaused];
     playing = !bPaused;
+    cout << "setting playing" << !bPaused <<endl;
 }
 
 //--------------------------------------------------------------
